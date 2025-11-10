@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: chatr_user
+      POSTGRES_PASSWORD: chatr_pass
+      POSTGRES_DB: chatr_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+volumes:
+  db-data:
