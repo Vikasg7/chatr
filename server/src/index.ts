@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import authRouter from "./routes/auth";
+import messageRouter from "./routes/messages";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -14,6 +15,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // auth routes
 app.use("/api/auth", authRouter(prisma));
+app.use("/api/messages", messageRouter(prisma));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
