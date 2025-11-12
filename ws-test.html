@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h2>WebSocket Test</h2>
+
+    <input id="msg" placeholder="Type message..." />
+    <button onclick="send()">Send</button>
+
+    <pre id="log"></pre>
+
+    <script>
+      const token = prompt("Enter your JWT token:");
+      const ws = new WebSocket("ws://localhost:4000?token=" + token);
+
+      ws.onopen = () => {
+        log("Connected!");
+      };
+
+      ws.onmessage = (e) => {
+        log("Received: " + e.data);
+      };
+
+      ws.onclose = () => log("Disconnected");
+
+      function send() {
+        ws.send(JSON.stringify({ type: "message:new", text: msg.value }));
+        msg.value = "";
+      }
+
+      function log(t) {
+        document.getElementById("log").textContent += t + "\n";
+      }
+    </script>
+  </body>
+</html>
