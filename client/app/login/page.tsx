@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
   const setToken = useAuthStore((s) => s.setToken);
+  const setUser = useAuthStore((s) => s.setUser);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,6 +18,7 @@ export default function LoginPage() {
 
     if (res.token) {
       setToken(res.token);
+      setUser(res.user);
       router.push("/");
     } else {
       alert("Invalid credentials");
