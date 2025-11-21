@@ -9,6 +9,7 @@ export type Client = {
   id: string;
   socket: WebSocket;
   userId?: number;
+  roomId?: number;
 };
 
 export class WSService {
@@ -45,7 +46,6 @@ export class WSService {
         console.warn("Invalid WebSocket token");
       }
     }
-
   }
 
   private handleSocketClose(senderId: string) {
@@ -60,18 +60,31 @@ export class WSService {
       if (!client || !client.userId) 
         return;
 
-      if (msg.type === "message:new" && msg.text) {
+      if (msg.type === "room:join") {
+        client.roomId = msg.roomId;
+        return;
+      }
+
+      if (msg.type === "message:new") {
+        if (!client.roomId)
+          return;
+
         const message = await this.prisma.message.create({
           data: {
             text: msg.text,
-            senderId: client.userId,
+            senderId: client.userId!,
+            roomId: client.roomId,
           },
           include: {
-            sender: { select: { id: true, email: true, name: true } },
+            sender: true,
           },
         });
 
-        this.broadcast({ type: "message:new", message });
+        // Broadcast only to users in the same room
+        this.broadcastToRoom(client.roomId, {
+          type: "message:new",
+          message,
+        });
       }
     } catch (err) {
       console.error("WS error:", err);
@@ -82,6 +95,15 @@ export class WSService {
     const str = JSON.stringify(payload);
     for (const client of this.clients.values()) {
       client.socket.send(str);
+    }
+  }
+
+  broadcastToRoom(roomId: number, payload: any) {
+    const data = JSON.stringify(payload);
+    for (const client of this.clients.values()) {
+      if (client.roomId === roomId) {
+        client.socket.send(data);
+      }
     }
   }
 }
