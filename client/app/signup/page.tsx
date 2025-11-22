@@ -36,7 +36,7 @@ export default function SignupPage() {
       <input
         className="border p-2"
         placeholder="Email"
-        value={email}
+        value={email} 
         onChange={(e) => setEmail(e.target.value)}
       />
 

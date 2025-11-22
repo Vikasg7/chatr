@@ -1,9 +1,64 @@
 @import "tailwindcss";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============ Design System ============ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colors */
+  --bg-app: #020617;          /* slate-950 */
+  --bg-elevated: #020617;     /* same, but you can tweak later */
+  --bg-elevated-soft: #020617;
+  --border-subtle: #1e293b;   /* slate-800 */
+  --accent: #4f46e5;          /* indigo-600 */
+  --accent-soft: #6366f1;     /* indigo-500 */
+  --text-primary: #e5e7eb;    /* gray-200 */
+  --text-muted: #9ca3af;      /* gray-400 */
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+
+  /* Shadow */
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.7);
 }
+
+/* App base styles */
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+}
+
+/* Custom scrollbars for the app */
+.scroll-thin {
+  scrollbar-width: thin;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 999px;
+}
+/* ============ Theme Variables ============ */
 
 @theme inline {
   --color-background: var(--background);
