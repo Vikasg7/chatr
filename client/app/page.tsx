@@ -11,18 +11,19 @@ import { RoomList } from "./components/RoomList";
 import { ChatHeader } from "./components/ChatHeader";
 import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
+import { CreateRoomModal } from "./components/CreateRoomModal";
 
 export default function ChatPage() {
   const router = useRouter();
-  const { messages, addMsg, setMsgs } = useMessageStore();
+  const { addMsg, setMsgs } = useMessageStore();
   const [connected, setConnected] = useState(false);
   const [input, setInput] = useState("");
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const { token, setToken, user, hydrated } = useAuthStore();
+  const { token, user, hydrated } = useAuthStore();
   const { rooms, setRooms, currentRoomId, setCurrentRoom } = useRoomStore();
 
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -34,12 +35,6 @@ export default function ChatPage() {
     loadRooms();
   }, [token, hydrated]);
 
-  useEffect(() => {
-    // Auto-scroll on new message
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   useEffect(() => {
     if (!hydrated)
@@ -121,14 +116,17 @@ export default function ChatPage() {
     setInput("");
   }
 
-  function logout() {
-    setToken(null);
-    router.push("/login");
-  }
 
   function selectRoom(id: number) {
     setCurrentRoom(id);
     joinRoom(id);
+  }
+
+  async function createRoom(name: string) {
+    const room = await api.post("/rooms", { name });
+    setRooms([...rooms, room]);
+    setCurrentRoom(room.id);
+    joinRoom(room.id);
   }
 
   if (!ready)
@@ -147,6 +145,13 @@ export default function ChatPage() {
             <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
               Rooms
             </h2>
+            <button
+              onClick={() => setShowCreateRoomModal(true)}
+              className="text-slate-300 hover:text-indigo-400 transition text-xl leading-none"
+              title="Create Room"
+            >
+              +
+            </button>        
           </div>
 
           <RoomList
@@ -181,6 +186,14 @@ export default function ChatPage() {
           />
  
         </section>
+
+        {/* Create Room Modal */}
+        <CreateRoomModal
+          open={showCreateRoomModal}
+          onClose={() => setShowCreateRoomModal(false)}
+          onCreate={(name) => createRoom(name)}
+        />
+
       </div>
     </main>
   );
