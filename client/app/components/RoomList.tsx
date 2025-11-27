@@ -1,16 +1,15 @@
 "use client";
 
-import { useRoomStore } from "@/stores/room";
 import { motion } from "framer-motion";
 
 interface RoomListProps {
+  rooms: any[];
+  currentRoomId: number | null;
   onSelect: (id: number) => void;
 };
 
-export function RoomList( { onSelect }: RoomListProps) {
-  const { rooms, currentRoomId } = useRoomStore();
-
-    return (
+export function RoomList( { rooms, currentRoomId, onSelect }: RoomListProps) {
+  return (
     <motion.div
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}

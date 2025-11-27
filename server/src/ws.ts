@@ -30,21 +30,22 @@ export class WSService {
     const url = new URL(req.url ?? "", `http://${req.headers.host}`);
     const token = url.searchParams.get("token");
 
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-        this.clients.set(id, { id, socket, userId: decoded.userId });
-    
-        console.log("✅ WebSocket connected", id);
-    
-        socket.on("message", this.handleMessage.bind(this, id));
-    
-        socket.on("close", this.handleSocketClose.bind(this, id));
-      } catch {
-        socket.send("Error: Invalid JWT token");
-        socket.close();
-        console.warn("Invalid WebSocket token");
-      }
+    if (!token)
+      return;
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+      this.clients.set(id, { id, socket, userId: decoded.userId });
+  
+      console.log("✅ WebSocket connected", id);
+  
+      socket.on("message", this.handleMessage.bind(this, id));
+  
+      socket.on("close", this.handleSocketClose.bind(this, id));
+    } catch {
+      socket.send("Error: Invalid JWT token");
+      socket.close();
+      console.warn("Invalid WebSocket token");
     }
   }
 

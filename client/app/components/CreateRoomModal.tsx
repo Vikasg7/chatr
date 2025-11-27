@@ -12,7 +12,8 @@ interface CreateRoomModalProps {
 export function CreateRoomModal({ open, onClose, onCreate }: CreateRoomModalProps) {
   const [name, setName] = useState("");
 
-  if (!open) return null;
+  if (!open)
+    return null;
 
   function submit() {
     if (!name.trim()) return;

@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useMessageStore } from "@/stores/msg";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuthStore } from "@/stores/auth";
-import { useRoomStore } from "@/stores/room";
 import * as api from "@/lib/api";
 import * as WS from "@/lib/ws";
 import { useRouter } from "next/navigation";
@@ -12,19 +10,88 @@ import { ChatHeader } from "./components/ChatHeader";
 import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
 import { CreateRoomModal } from "./components/CreateRoomModal";
+import { StartDmModal } from "./components/StartDmModal";
+
+interface Message {
+  id: number;
+  text: string;
+  sender: { id: number; name: string | null; email: string };
+  createdAt: string;
+}
 
 export default function ChatPage() {
   const router = useRouter();
-  const { addMsg, setMsgs } = useMessageStore();
+
   const [connected, setConnected] = useState(false);
   const [input, setInput] = useState("");
-  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
-
-  const wsRef = useRef<WebSocket | null>(null);
-  const { token, user, hydrated } = useAuthStore();
-  const { rooms, setRooms, currentRoomId, setCurrentRoom } = useRoomStore();
-
   const [ready, setReady] = useState(false);
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+  const [showStartDmModal, setShowStartDmModal] = useState(false);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [dmRooms, setDmRooms] = useState<any[]>([]);
+  const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  
+    const wsRef = useRef<WebSocket | null>(null);
+    const { token, user, hydrated } = useAuthStore();
+
+  const addMsg = useCallback((msg: Message) => {
+    setMessages(prevMessages => 
+      [...prevMessages, msg].sort((a, b) => a.id - b.id)
+    );
+  }, []);
+
+  const setMsgs = useCallback((msgs: Message[] | undefined) => {
+    setMessages((msgs ?? []).sort((a, b) => a.id - b.id));
+  }, []);
+
+  const loadRoomMessages = useCallback(async (roomId: number) => {
+    const msgs = await api.get(`/rooms/${roomId}/messages`);
+    setMsgs(msgs);
+  }, []);
+
+  const joinRoom = useCallback((roomId: number) => {
+    wsRef.current?.send(
+      JSON.stringify({
+        type: "room:join",
+        roomId,
+      })
+    );
+    loadRoomMessages(roomId);
+  }, []);
+
+  const selectRoom = useCallback((id: number) => {
+    setCurrentRoomId(id);
+    joinRoom(id);
+  }, []);
+
+  const createRoom = useCallback(async (name: string) => {
+    const room = await api.post("/rooms", { name });
+    setRooms(prev => [...prev, room]);
+    setCurrentRoomId(room.id);
+    joinRoom(room.id);
+  }, []);
+
+  const startDm = useCallback(async (user: any) => {
+    const room = await api.post(`/dm/${user.id}`, { name: user?.name });
+    setDmRooms((prev) => {
+      const exists = prev.find((r) => r.id === room.id);
+      return exists ? prev : [...prev, room];
+    });
+    setCurrentRoomId(room.id);
+    joinRoom(room.id);
+  }, []);
+
+  const sendMsg = useCallback(() => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN)
+      return;
+    if (!input.trim())
+      return;
+
+    ws.send(JSON.stringify({ type: "message:new", text: input.trim() }));
+    setInput("");
+  }, []);
 
   useEffect(() => {
     if (!hydrated)
@@ -33,8 +100,8 @@ export default function ChatPage() {
       return;
     setReady(true);
     loadRooms();
+    loadDmRooms();
   }, [token, hydrated]);
-
 
   useEffect(() => {
     if (!hydrated)
@@ -43,8 +110,6 @@ export default function ChatPage() {
       router.replace("/login");
       return;
     }
-
-    loadInitialMessages();
 
     if (wsRef.current?.readyState === WebSocket.OPEN)
       return;
@@ -58,34 +123,19 @@ export default function ChatPage() {
     };
   }, [token, hydrated]);
 
-  async function loadInitialMessages() {
-    const data = await api.get("/messages");
-    setMsgs(data.messages);
-  }
-
   async function loadRooms() {
     const res = await api.get("/rooms");
     setRooms(res);
 
     if (!currentRoomId && res.length > 0) {
-      setCurrentRoom(res[0].id);
+      setCurrentRoomId(res[0].id);
       joinRoom(res[0].id);
     }
   }
 
-  function joinRoom(roomId: number) {
-    wsRef.current?.send(
-      JSON.stringify({
-        type: "room:join",
-        roomId,
-      })
-    );
-    loadRoomMessages(roomId);
-  }
-
-  async function loadRoomMessages(roomId: number) {
-    const msgs = await api.get(`/rooms/${roomId}/messages`);
-    setMsgs(msgs);
+  async function loadDmRooms() {
+    const res = await api.get("/dm");
+    setDmRooms(res);
   }
 
   function setupWS(t: string) {
@@ -105,34 +155,13 @@ export default function ChatPage() {
     ws.onclose = () => setConnected(false);
   }
 
-  function sendMsg() {
-    const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN)
-      return;
-    if (!input.trim())
-      return;
-
-    ws.send(JSON.stringify({ type: "message:new", text: input.trim() }));
-    setInput("");
-  }
-
-
-  function selectRoom(id: number) {
-    setCurrentRoom(id);
-    joinRoom(id);
-  }
-
-  async function createRoom(name: string) {
-    const room = await api.post("/rooms", { name });
-    setRooms([...rooms, room]);
-    setCurrentRoom(room.id);
-    joinRoom(room.id);
-  }
-
   if (!ready)
     return null;
 
-  const currentRoom = rooms.find((r: any) => r.id === currentRoomId);
+  const currentRoom =
+    rooms.find((r: any) => r.id === currentRoomId) || 
+    dmRooms.find((r: any) => r.id === currentRoomId) || 
+    null;
 
   return (
     <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col">
@@ -155,6 +184,28 @@ export default function ChatPage() {
           </div>
 
           <RoomList
+            rooms={rooms}
+            currentRoomId={ currentRoomId }
+            onSelect={selectRoom}
+          />
+
+          {/* Direct Messages section */}
+          <div className="mt-4 mb-1 flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+              Direct Messages
+            </h2>
+            <button
+              onClick={() => setShowStartDmModal(true)}
+              className="text-slate-300 hover:text-indigo-400 transition text-lg leading-none px-1"
+              title="Start a direct message"
+            >
+            +
+            </button>
+          </div>
+
+          <RoomList
+            rooms={dmRooms}
+            currentRoomId={ currentRoomId }
             onSelect={selectRoom}
           />
 
@@ -175,7 +226,7 @@ export default function ChatPage() {
           />
 
           {/* Messages */}
-          <MessageList />
+          <MessageList messages={messages}/>
 
           {/* Input bar */}
           <MsgInput
@@ -192,6 +243,13 @@ export default function ChatPage() {
           open={showCreateRoomModal}
           onClose={() => setShowCreateRoomModal(false)}
           onCreate={(name) => createRoom(name)}
+        />
+
+        {/* DM Modal */}
+        <StartDmModal
+          open={showStartDmModal}
+          onClose={() => setShowStartDmModal(false)}
+          onSelectUser={startDm}
         />
 
       </div>

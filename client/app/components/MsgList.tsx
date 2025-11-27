@@ -3,13 +3,15 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as format from "@/lib/format";
-import { useMessageStore } from "@/stores/msg";
 import { useAuthStore } from "@/stores/auth";
 
-export function MessageList() {
+interface MessageListProps {
+  messages: any[];
+}
+
+export function MessageList({ messages }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { messages } = useMessageStore();
-  const { user } = useAuthStore();
+  const userId = useAuthStore(s => s.user?.id);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -29,7 +31,7 @@ export function MessageList() {
       ) : (
         <AnimatePresence initial={false}>
           {messages.map((m) => {
-            const mine = m.sender.id === user?.id;
+            const mine = m.sender.id === userId;
 
             return (
               <motion.div

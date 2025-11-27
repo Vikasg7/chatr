@@ -3,6 +3,8 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import authRouter from "./routes/auth";
 import roomRouter from "./routes/rooms";
+import dmRouter from "./routes/dm";
+import usersRouter from "./routes/users";
 import { WSService } from "./ws";
 import http from "http";
 
@@ -30,6 +32,8 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 // auth routes
 app.use("/api/auth", authRouter(prisma));
 app.use("/api/rooms", roomRouter(prisma));
+app.use("/api/dm", dmRouter(prisma));
+app.use("/api/users", usersRouter(prisma));
 
 const server = http.createServer(app);
 // ✅ Initialize WebSocket service

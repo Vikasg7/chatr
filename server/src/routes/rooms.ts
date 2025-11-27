@@ -20,6 +20,7 @@ export default (prisma: PrismaClient) => {
   // LIST ROOMS
   router.get("/", requireAuth, async (_req, res) => {
     const rooms = await prisma.room.findMany({
+      where: { type: "GROUP" },
       orderBy: { id: "asc" },
     });
     res.json(rooms);

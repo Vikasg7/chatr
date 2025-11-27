@@ -18,7 +18,7 @@ export default function GlobalHeader() {
     if (hydrated && !token) {
       router.replace("/login");
     }
-  }, [hydrated, token, router]);
+  }, [hydrated, token]);
 
   return (
     <header className="flex h-[70px] items-center justify-between px-6 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur z-20">
@@ -35,10 +35,10 @@ export default function GlobalHeader() {
       </div>
 
       <div className="flex items-center gap-3 text-xs text-slate-400">
-        {hydrated && user ? (
+        {hydrated && token ? (
           <>
             <span className="hidden sm:inline text-slate-400">
-              {user.name || user.email}
+              {user?.name || user?.email}
             </span>
             <button
               onClick={logout}
