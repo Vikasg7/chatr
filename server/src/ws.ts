@@ -43,7 +43,7 @@ export class WSService {
   
       socket.on("close", this.handleSocketClose.bind(this, id));
     } catch {
-      socket.send("Error: Invalid JWT token");
+      socket.send(JSON.stringify({"error": "Invalid token"}));
       socket.close();
       console.warn("Invalid WebSocket token");
     }

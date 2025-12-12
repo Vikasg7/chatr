@@ -2,30 +2,52 @@ import { useAuthStore } from "@/stores/auth";
 
 export const API_BASE = "http://localhost:4000/api";
 
-export async function get(path: string) {
+async function request(method: string, path: string, body?: any) {
   const token = useAuthStore.getState().token;
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
   });
 
-  return res.json();
+  // Handle unauthorized centrally: clear auth and surface an error
+  if (res.status === 401) {
+    // clear token and user so UI can react
+    useAuthStore.getState().logout();
+    throw new Error("Unauthorized");
+  }
+
+  // Non-OK responses: try to parse json error, otherwise text
+  if (!res.ok) {
+    let errBody: any = null;
+    try {
+      errBody = await res.json();
+    } catch (e) {
+      errBody = await res.text();
+    }
+    const message = (errBody && errBody.error) || errBody || res.statusText;
+    throw new Error(String(message));
+  }
+
+  // OK -> parse json (some endpoints may return empty body)
+  try {
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function get(path: string) {
+  return request("GET", path);
 }
 
 export async function post(path: string, body: any) {
-  const token = useAuthStore.getState().token;
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  return res.json();
+  return request("POST", path, body);
 }

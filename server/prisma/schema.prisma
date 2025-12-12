@@ -12,6 +12,7 @@ model User {
   email     String        @unique
   password  String
   name      String?
+  avatarUrl String?
   createdAt DateTime      @default(now())
   messages  Message[]
   rooms     RoomMember[]  // <-- New: rooms the user belongs to

@@ -32,8 +32,8 @@ export default function ChatPage() {
   const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   
-    const wsRef = useRef<WebSocket | null>(null);
-    const { token, user, hydrated } = useAuthStore();
+  const wsRef = useRef<WebSocket | null>(null);
+  const { token, user, hydrated, setUser } = useAuthStore();
 
   const addMsg = useCallback((msg: Message) => {
     setMessages(prevMessages => 
@@ -91,17 +91,26 @@ export default function ChatPage() {
 
     ws.send(JSON.stringify({ type: "message:new", text: input.trim() }));
     setInput("");
-  }, []);
+  }, [input]);
 
   useEffect(() => {
-    if (!hydrated)
-      return;
-    if (token === null)
-      return;
-    setReady(true);
-    loadRooms();
-    loadDmRooms();
-  }, [token, hydrated]);
+    if (!hydrated) return;
+    if (token === null) return;
+
+    // verify token with server before loading app data
+    (async () => {
+      try {
+        const me = await api.get("/auth/me");
+        if (me) setUser(me);
+        setReady(true);
+        await loadRooms();
+        await loadDmRooms();
+      } catch (err) {
+        // api.get will clear auth on 401; ensure we redirect to login
+        router.replace("/login");
+      }
+    })();
+  }, [token, hydrated, setUser]);
 
   useEffect(() => {
     if (!hydrated)
@@ -187,6 +196,7 @@ export default function ChatPage() {
             rooms={rooms}
             currentRoomId={ currentRoomId }
             onSelect={selectRoom}
+            currentUserId={user?.id ?? null}
           />
 
           {/* Direct Messages section */}
@@ -207,6 +217,7 @@ export default function ChatPage() {
             rooms={dmRooms}
             currentRoomId={ currentRoomId }
             onSelect={selectRoom}
+            currentUserId={user?.id ?? null}
           />
 
           <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 mt-auto">

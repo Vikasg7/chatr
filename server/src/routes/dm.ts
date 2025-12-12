@@ -20,7 +20,7 @@ export default (prisma: PrismaClient) => {
           members: {
             include: {
               user: {
-                select: { id: true, email: true, name: true },
+                select: { id: true, email: true, name: true, avatarUrl: true },
               },
             },
           },
@@ -63,7 +63,7 @@ export default (prisma: PrismaClient) => {
         include: {
           members: {
             include: {
-              user: { select: { id: true, email: true, name: true } },
+              user: { select: { id: true, email: true, name: true, avatarUrl: true } },
             },
           },
         },

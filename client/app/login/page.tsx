@@ -14,14 +14,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
   async function submit() {
-    const res = await api.post("/auth/login", { email, password });
+    try {
+      const res = await api.post("/auth/login", { email, password });
 
-    if (res.token) {
-      setToken(res.token);
-      setUser(res.user);
-      router.push("/");
-    } else {
-      alert("Invalid credentials");
+      if (res && res.token) {
+        setToken(res.token);
+        setUser(res.user);
+        router.push("/");
+      } else {
+        // show toast for server-provided error
+        import("@/lib/toast").then((m) => m.default.showToast(res?.error || "Invalid credentials", "error"));
+      }
+    } catch (err: any) {
+      import("@/lib/toast").then((m) => m.errorToToast(err, "Login failed"));
     }
   }
 

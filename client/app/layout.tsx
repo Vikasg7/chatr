@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AuthLoader from "./authloader";
-import GlobalHeader from "./components/GlobalHeader";
+import AuthLoader from "@/app/authloader";
+import GlobalHeader from "@/app/components/GlobalHeader";
 
 export const metadata: Metadata = {
   title: "Chatr",

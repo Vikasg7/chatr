@@ -53,5 +53,24 @@ export default function (prisma: PrismaClient) {
     }
   });
 
+  router.get("/me", async (req, res) => {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith("Bearer "))
+      return res.status(401).json({ error: "unauthorized" });
+    
+    const token = auth.slice(7);
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      if (!user)
+        return res.status(401).json({ error: "unauthorized" });
+
+      res.json({ id: user.id, email: user.email, name: user.name });
+    } catch (err) {
+      console.error(err);
+      res.status(401).json({ error: "unauthorized" });
+    }
+  });
+
   return router;
 };

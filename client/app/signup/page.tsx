@@ -12,14 +12,19 @@ export default function SignupPage() {
   const [name, setName] = useState("");
 
   async function submit() {
-    await api.post("/auth/signup", {
-      email,
-      password,
-      name,
-    });
+    try {
+      const res = await api.post("/auth/signup", {
+        email,
+        password,
+        name,
+      });
 
-    alert("Signup successful! Please login.");
-    router.push("/login");
+      // show a success toast then navigate to login
+      import("@/lib/toast").then((m) => m.default.showToast(res?.message || "Signup successful! Please login.", "success"));
+      router.push("/login");
+    } catch (err: any) {
+      import("@/lib/toast").then((m) => m.errorToToast(err, "Signup failed"));
+    }
   }
 
   return (

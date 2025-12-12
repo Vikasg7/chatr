@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useAuthStore } from "@/stores/auth";
+import Toaster from "./components/Toaster";
 
 export default function AuthLoader({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthStore((s) => s.hydrated);
@@ -15,5 +16,10 @@ export default function AuthLoader({ children }: { children: React.ReactNode }) 
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <Toaster />
+      {children}
+    </>
+  );
 }
