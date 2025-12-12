@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuthStore } from "@/stores/auth";
+import Toaster from "./components/Toaster";
 import * as api from "@/lib/api";
 import * as WS from "@/lib/ws";
 import { useRouter } from "next/navigation";
@@ -164,8 +165,14 @@ export default function ChatPage() {
     ws.onclose = () => setConnected(false);
   }
 
-  if (!ready)
-    return null;
+  // wait for the auth store to rehydrate before showing the app
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading…</div>
+      </div>
+    );
+  }
 
   const currentRoom =
     rooms.find((r: any) => r.id === currentRoomId) || 

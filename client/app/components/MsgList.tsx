@@ -58,7 +58,7 @@ export function MessageList({ messages }: MessageListProps) {
                 className={`flex w-full justify-start items-start ${firstInGroup ? 'mt-4' : 'mt-0'}`}
               >
                 {/* Avatar column: show avatar at start of group, otherwise placeholder to maintain alignment */}
-                <div className="flex items-start mr-2" aria-hidden>
+                <div className="flex items-start mr-3" aria-hidden>
                   {firstInGroup ? (
                     <Avatar
                       src={m.sender.avatarUrl ?? null}

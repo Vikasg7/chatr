@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AuthLoader from "@/app/authloader";
 import GlobalHeader from "@/app/components/GlobalHeader";
+import Toaster from "@/app/components/Toaster";
 
 export const metadata: Metadata = {
   title: "Chatr",
@@ -16,10 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={"bg-slate-950 text-slate-100"} >
-        <AuthLoader>
-          <GlobalHeader />
-          {children}
-        </AuthLoader>
+        <GlobalHeader />
+        {children}
+        <Toaster />
       </body>
     </html>
   );
