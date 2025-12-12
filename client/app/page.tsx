@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuthStore } from "@/stores/auth";
-import Toaster from "./components/Toaster";
+import GlobalHeader from "./components/GlobalHeader";
+import toastLib from "@/lib/toast";
 import * as api from "@/lib/api";
 import * as WS from "@/lib/ws";
 import { useRouter } from "next/navigation";
@@ -26,6 +27,11 @@ export default function ChatPage() {
   const [connected, setConnected] = useState(false);
   const [input, setInput] = useState("");
   const [ready, setReady] = useState(false);
+  const [formMode, setFormMode] = useState<"login" | "signup">("login");
+  const [formLoading, setFormLoading] = useState(false);
+  const [formEmail, setFormEmail] = useState("");
+  const [formPassword, setFormPassword] = useState("");
+  const [formName, setFormName] = useState("");
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [showStartDmModal, setShowStartDmModal] = useState(false);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -34,7 +40,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   
   const wsRef = useRef<WebSocket | null>(null);
-  const { token, user, hydrated, setUser } = useAuthStore();
+  const { token, user, hydrated, setUser, setToken } = useAuthStore();
 
   const addMsg = useCallback((msg: Message) => {
     setMessages(prevMessages => 
@@ -107,19 +113,15 @@ export default function ChatPage() {
         await loadRooms();
         await loadDmRooms();
       } catch (err) {
-        // api.get will clear auth on 401; ensure we redirect to login
-        router.replace("/login");
+        // api.get will clear auth on 401
+        // token invalid -> clear and fall back to landing
       }
     })();
   }, [token, hydrated, setUser]);
 
   useEffect(() => {
-    if (!hydrated)
-      return;
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
+    if (!hydrated) return;
+    if (!token) return;
 
     if (wsRef.current?.readyState === WebSocket.OPEN)
       return;
@@ -165,8 +167,108 @@ export default function ChatPage() {
     ws.onclose = () => setConnected(false);
   }
 
+  async function submitLogin() {
+    if (formLoading) return;
+    setFormLoading(true);
+    try {
+      const res = await api.post("/auth/login", { email: formEmail, password: formPassword });
+      if (res && res.token) {
+        setToken(res.token);
+        setUser(res.user);
+        toastLib.showToast("Signed in", "success");
+        router.replace("/");
+      } else {
+        toastLib.showToast(res?.error || "Invalid credentials", "error");
+      }
+    } catch (err: any) {
+      toastLib.errorToToast(err, "Login failed");
+    } finally {
+      setFormLoading(false);
+    }
+  }
+
+  async function submitSignup() {
+    if (formLoading) return;
+    setFormLoading(true);
+    try {
+      const res = await api.post("/auth/signup", { name: formName, email: formEmail, password: formPassword });
+      toastLib.showToast(res?.message || "Signup successful! Please login.", "success");
+      // switch to login view and prefill email
+      setFormMode("login");
+    } catch (err: any) {
+      toastLib.errorToToast(err, "Signup failed");
+    } finally {
+      setFormLoading(false);
+    }
+  }
+
   // wait for the auth store to rehydrate before showing the app
   if (!hydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading…</div>
+      </div>
+    );
+  }
+
+  // If there's no token show the landing / auth forms
+  if (!token) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-6">
+        <div className="w-full max-w-6xl grid grid-cols-2 gap-8 items-center">
+          <div className="text-left">
+            <h1 className="text-4xl font-bold text-slate-100 mb-4">Chatr</h1>
+            <p className="text-slate-300 max-w-lg">A simple, private chat experience. Connect with your team and friends — messages sync in real time.</p>
+            <ul className="mt-6 text-sm text-slate-400 space-y-2">
+              <li>• Real-time messaging</li>
+              <li>• Direct messages and rooms</li>
+              <li>• Small, focused UI</li>
+            </ul>
+          </div>
+
+          <div className="w-full max-w-md mx-auto">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-100">{formMode === "login" ? "Sign in" : "Create account"}</h2>
+                <div className="text-sm text-slate-400">
+                  {formMode === "login" ? (
+                    <button className="underline hover:text-slate-200" onClick={() => setFormMode("signup")}>Create account</button>
+                  ) : (
+                    <button className="underline hover:text-slate-200" onClick={() => setFormMode("login")}>Sign in</button>
+                  )}
+                </div>
+              </div>
+
+              {formMode === "signup" && (
+                <>
+                  <label className="block text-xs text-slate-400 mb-1">Full name</label>
+                  <input className="w-full rounded-md bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 mb-3 outline-none" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Your name" />
+                </>
+              )}
+
+              <label className="block text-xs text-slate-400 mb-1">Email</label>
+              <input className="w-full rounded-md bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 mb-3 outline-none" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="you@domain.com" />
+
+              <label className="block text-xs text-slate-400 mb-1">Password</label>
+              <input type="password" className="w-full rounded-md bg-slate-800/60 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 mb-4 outline-none" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} placeholder="••••••••" />
+
+              <div className="flex items-center justify-between gap-3">
+                {formMode === "login" ? (
+                  <button disabled={formLoading || !formEmail.trim() || !formPassword.trim()} onClick={submitLogin} className="flex-1 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-slate-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">{formLoading ? "Signing in…" : "Sign in"}</button>
+                ) : (
+                  <button disabled={formLoading || !formEmail.trim() || !formPassword.trim() || !formName.trim()} onClick={submitSignup} className="flex-1 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-slate-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">{formLoading ? "Creating…" : "Create account"}</button>
+                )}
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // If token exists but we haven't finished preparing the app, show loading
+  if (token && !ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div>Loading…</div>
@@ -180,7 +282,9 @@ export default function ChatPage() {
     null;
 
   return (
-    <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col">
+    <>
+      <GlobalHeader />
+      <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col">
 
       {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
@@ -272,5 +376,6 @@ export default function ChatPage() {
 
       </div>
     </main>
+    </>
   );
 }

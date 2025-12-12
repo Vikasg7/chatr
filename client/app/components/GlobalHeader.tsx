@@ -10,13 +10,13 @@ export default function GlobalHeader() {
 
   function logout() {
     setToken(null);
-    router.push("/login");
+    router.push("/");
   }
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (hydrated && !token) {
-      router.replace("/login");
+      router.replace("/");
     }
   }, [hydrated, token]);
 
