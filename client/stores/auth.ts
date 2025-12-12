@@ -6,6 +6,7 @@ interface User {
   name: string | null;
   email: string;
   avatarUrl: string | null;
+  onboardingSeen?: boolean;
 }
 
 interface AuthState {

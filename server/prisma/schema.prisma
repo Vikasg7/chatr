@@ -13,6 +13,7 @@ model User {
   password  String
   name      String?
   avatarUrl String?
+  onboardingSeen Boolean   @default(false)
   createdAt DateTime      @default(now())
   messages  Message[]
   rooms     RoomMember[]  // <-- New: rooms the user belongs to

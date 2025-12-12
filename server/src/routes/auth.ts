@@ -24,7 +24,7 @@ export default function (prisma: PrismaClient) {
       });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
-      res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
+      res.json({ user: { id: user.id, email: user.email, name: user.name, onboardingSeen: user.onboardingSeen ?? false }, token });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "server error" });
@@ -46,7 +46,7 @@ export default function (prisma: PrismaClient) {
         return res.status(401).json({ error: "invalid credentials" });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
-      res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
+      res.json({ user: { id: user.id, email: user.email, name: user.name, onboardingSeen: user.onboardingSeen ?? false }, token });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "server error" });
@@ -65,7 +65,27 @@ export default function (prisma: PrismaClient) {
       if (!user)
         return res.status(401).json({ error: "unauthorized" });
 
-      res.json({ id: user.id, email: user.email, name: user.name });
+      res.json({ id: user.id, email: user.email, name: user.name, onboardingSeen: user.onboardingSeen ?? false });
+    } catch (err) {
+      console.error(err);
+      res.status(401).json({ error: "unauthorized" });
+    }
+  });
+
+  // Persist onboarding seen flag for the authenticated user
+  router.post("/onboarding", async (req, res) => {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith("Bearer "))
+      return res.status(401).json({ error: "unauthorized" });
+
+    const token = auth.slice(7);
+    const { seen } = req.body;
+    if (typeof seen !== 'boolean') return res.status(400).json({ error: 'seen boolean required' });
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+      const user = await prisma.user.update({ where: { id: decoded.userId }, data: { onboardingSeen: seen } });
+      res.json({ success: true, onboardingSeen: user.onboardingSeen });
     } catch (err) {
       console.error(err);
       res.status(401).json({ error: "unauthorized" });

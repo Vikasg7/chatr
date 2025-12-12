@@ -13,6 +13,8 @@ import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
 import { CreateRoomModal } from "./components/CreateRoomModal";
 import { StartDmModal } from "./components/StartDmModal";
+import Onboarding from "./components/Onboarding";
+import { motion } from 'framer-motion';
 
 interface Message {
   id: number;
@@ -167,11 +169,14 @@ export default function ChatPage() {
     ws.onclose = () => setConnected(false);
   }
 
-  async function submitLogin() {
+  async function submitLogin(creds?: { email: string; password: string }) {
     if (formLoading) return;
     setFormLoading(true);
+    const email = creds?.email ?? formEmail;
+    const password = creds?.password ?? formPassword;
+
     try {
-      const res = await api.post("/auth/login", { email: formEmail, password: formPassword });
+      const res = await api.post("/auth/login", { email, password });
       if (res && res.token) {
         setToken(res.token);
         setUser(res.user);
@@ -216,18 +221,50 @@ export default function ChatPage() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-6">
         <div className="w-full max-w-6xl grid grid-cols-2 gap-8 items-center">
-          <div className="text-left">
-            <h1 className="text-4xl font-bold text-slate-100 mb-4">Chatr</h1>
-            <p className="text-slate-300 max-w-lg">A simple, private chat experience. Connect with your team and friends — messages sync in real time.</p>
-            <ul className="mt-6 text-sm text-slate-400 space-y-2">
-              <li>• Real-time messaging</li>
-              <li>• Direct messages and rooms</li>
-              <li>• Small, focused UI</li>
-            </ul>
+          <div className="text-left relative">
+            <div className="absolute -left-10 -top-10 w-56 h-56 rounded-full bg-gradient-to-br from-indigo-700/30 to-blue-400/20 blur-3xl opacity-40 pointer-events-none" />
+            <motion.h1 initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.36 }} className="text-5xl font-extrabold text-slate-100 mb-4">Chatr</motion.h1>
+            <motion.p initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4, delay: 0.06 }} className="text-slate-300 max-w-lg mb-6">A simple, private chat experience. Connect with your team and friends — messages sync in real time.</motion.p>
+
+            <div className="flex items-center gap-4">
+              <motion.ul initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }} className="text-sm text-slate-400 space-y-2">
+                <motion.li variants={{ hidden: { y: 6, opacity: 0 }, show: { y: 0, opacity: 1 } }}>• Real-time messaging</motion.li>
+                <motion.li variants={{ hidden: { y: 6, opacity: 0 }, show: { y: 0, opacity: 1 } }}>• Direct messages and rooms</motion.li>
+                <motion.li variants={{ hidden: { y: 6, opacity: 0 }, show: { y: 0, opacity: 1 } }}>• Small, focused UI</motion.li>
+              </motion.ul>
+
+              <div className="ml-6 flex items-center gap-4">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="opacity-90" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path d="M3 8a5 5 0 015-5h8a5 5 0 015 5v6a5 5 0 01-5 5H9l-4 3V8z" stroke="url(#g)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  <defs>
+                    <linearGradient id="g" x1="0" x2="1">
+                      <stop offset="0" stopColor="#6366F1" />
+                      <stop offset="1" stopColor="#06B6D4" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+
+                <div>
+                  <button
+                  onClick={() => {
+                    setFormMode("login");
+                    // prefill visually and auto-submit demo credentials
+                    setFormEmail("demo@chatr.local");
+                    setFormPassword("password");
+                    // call submitLogin with explicit creds to avoid waiting on state
+                    submitLogin({ email: "demo@chatr.local", password: "password" });
+                  }}
+                  className="rounded-full bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow transform-gpu transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
+                >
+                  Try demo
+                </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="w-full max-w-md mx-auto">
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-lg">
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-900/70 border border-slate-800 rounded-3xl p-6 shadow-2xl transform-gpu transition-transform duration-150 hover:scale-[1.01]">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-slate-100">{formMode === "login" ? "Sign in" : "Create account"}</h2>
                 <div className="text-sm text-slate-400">
@@ -284,6 +321,7 @@ export default function ChatPage() {
   return (
     <>
       <GlobalHeader />
+      <Onboarding />
       <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col">
 
       {/* Main layout */}
