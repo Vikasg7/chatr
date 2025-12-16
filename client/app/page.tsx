@@ -45,6 +45,7 @@ export default function ChatPage() {
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const { token, user, hydrated, setUser, setToken } = useAuthStore();
@@ -77,6 +78,7 @@ export default function ChatPage() {
   const selectRoom = useCallback((id: number) => {
     setCurrentRoomId(id);
     joinRoom(id);
+    setShowSidebar(false); // Close sidebar on selection (mobile)
   }, []);
 
   const createRoom = useCallback(async (name: string) => {
@@ -393,14 +395,27 @@ export default function ChatPage() {
 
   return (
     <>
-      <GlobalHeader />
+      <GlobalHeader onMenuClick={() => setShowSidebar(true)} />
       <Onboarding />
-      <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col">
+      <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col relative">
 
         {/* Main layout */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <aside className="w-64 border-r border-slate-800 bg-slate-950/90 px-4 py-4 flex flex-col">
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Sidebar - Desktop: always visible. Mobile: hidden unless showSidebar */}
+          {/* Mobile Overlay */}
+          {showSidebar && (
+            <div
+              className="fixed inset-0 bg-black/50 z-30 md:hidden"
+              onClick={() => setShowSidebar(false)}
+            />
+          )}
+
+          <aside className={`
+            w-64 border-r border-slate-800 bg-slate-950 px-4 py-4 flex flex-col
+            fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 ease-in-out
+            md:relative md:translate-x-0 md:z-0
+            ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
+          `}>
             <div className="mb-1 flex items-center justify-between">
               <h2 className="sidebar-heading">
                 Rooms

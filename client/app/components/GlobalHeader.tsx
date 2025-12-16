@@ -4,7 +4,11 @@ import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "next/navigation";
 
-export default function GlobalHeader() {
+interface GlobalHeaderProps {
+  onMenuClick?: () => void;
+}
+
+export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   const { token, hydrated, user, setToken } = useAuthStore();
   const router = useRouter();
 
@@ -23,6 +27,19 @@ export default function GlobalHeader() {
   return (
     <header className="app-header z-20">
       <div className="flex items-center gap-2">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-1 mr-1 text-slate-400 hover:text-white transition"
+          aria-label="Toggle menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
         <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center text-sm font-bold">
           C
         </div>
