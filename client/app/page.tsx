@@ -180,13 +180,28 @@ export default function ChatPage() {
     const ws = WS.create(t);
     wsRef.current = ws;
 
-    ws.onopen = () => setConnected(true);
+    ws.onopen = () => {
+      setConnected(true);
+      if (Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    };
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       if (data.type === "message:new") {
         addMsg(data.message);
+
+        // Notify if backgrounded and not from self
+        if (document.hidden && data.message.sender.id !== user?.id) {
+          const n = new Notification(`New message from ${data.message.sender.name || data.message.sender.email}`, {
+            body: data.message.text || "Sent an attachment",
+            icon: "/icon.svg"
+          });
+          n.onclick = () => window.focus();
+        }
+
       } else if (data.type === "status:list") {
         setOnlineUsers(new Set(data.users));
       } else if (data.type === "status:online") {
