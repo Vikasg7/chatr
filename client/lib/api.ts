@@ -51,3 +51,21 @@ export async function get(path: string) {
 export async function post(path: string, body: any) {
   return request("POST", path, body);
 }
+
+export async function uploadFile(file: File) {
+  const token = useAuthStore.getState().token;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Upload failed");
+  }
+
+  return await res.json();
+}

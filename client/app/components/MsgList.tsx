@@ -79,8 +79,32 @@ export function MessageList({ messages }: MessageListProps) {
                     </div>
                   )}
 
-                  <div className={`${firstInGroup ? '' : 'mt-0'} text-slate-200 leading-relaxed whitespace-pre-wrap break-normal`}> 
+                  <div className={`${firstInGroup ? '' : 'mt-0'} text-slate-200 leading-relaxed whitespace-pre-wrap break-normal`}>
                     {m.text}
+
+                    {m.attachmentUrl && (
+                      <div className="mt-2">
+                        {m.attachmentType === "IMAGE" ? (
+                          <img
+                            src={`http://localhost:4000${m.attachmentUrl}`}
+                            alt="attachment"
+                            className="max-h-64 rounded-lg border border-slate-700 shadow-sm object-contain"
+                          />
+                        ) : (
+                          <a
+                            href={`http://localhost:4000${m.attachmentUrl}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg border border-slate-700 hover:bg-slate-700 transition text-sm text-indigo-400"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                            </svg>
+                            Download Attachment
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>

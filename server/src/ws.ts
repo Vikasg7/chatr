@@ -108,9 +108,14 @@ export class WSService {
         if (!client.roomId)
           return;
 
+        if (!client.roomId)
+          return;
+
         const message = await this.prisma.message.create({
           data: {
-            text: msg.text,
+            text: msg.text || "", // Handle empty text if file only
+            attachmentUrl: msg.attachmentUrl,
+            attachmentType: msg.attachmentType,
             senderId: client.userId!,
             roomId: client.roomId,
           },

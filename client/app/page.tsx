@@ -106,14 +106,21 @@ export default function ChatPage() {
     }
   }, [currentRoomId]);
 
-  const sendMsg = useCallback(() => {
+  const sendMsg = useCallback((attachment?: { url: string; type: string }) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN)
       return;
-    if (!input.trim())
+
+    // If we have an attachment, we can send even if input is empty
+    if (!input.trim() && !attachment)
       return;
 
-    ws.send(JSON.stringify({ type: "message:new", text: input.trim() }));
+    ws.send(JSON.stringify({
+      type: "message:new",
+      text: input.trim(),
+      attachmentUrl: attachment?.url,
+      attachmentType: attachment?.type
+    }));
     setInput("");
   }, [input]);
 
