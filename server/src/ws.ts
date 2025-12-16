@@ -14,6 +14,8 @@ export type Client = {
 
 export class WSService {
   private wss: WebSocketServer;
+  private clients: Map<string, Client> = new Map();
+  private prisma: PrismaClient;
   // Track connected user IDs
   private onlineUsers: Set<number> = new Set();
 
@@ -122,6 +124,17 @@ export class WSService {
           type: "message:new",
           message,
         });
+      } else if (msg.type === "typing:start" || msg.type === "typing:stop") {
+        if (!client.roomId) return;
+
+        // Broadcast to room (exclude sender)
+        // We broadcast to ALL, client filters self, or we filter here.
+        // Let's filter here to save bandwidth.
+        this.broadcastToRoom(client.roomId, {
+          type: msg.type,
+          userId: client.userId,
+          roomId: client.roomId // useful context
+        }, client.id); // exclude sender
       }
     } catch (err) {
       console.error("WS error:", err);
@@ -137,10 +150,10 @@ export class WSService {
     }
   }
 
-  broadcastToRoom(roomId: number, payload: any) {
+  broadcastToRoom(roomId: number, payload: any, excludeClientId?: string) {
     const data = JSON.stringify(payload);
     for (const client of this.clients.values()) {
-      if (client.roomId === roomId && client.socket.readyState === WebSocket.OPEN) {
+      if (client.roomId === roomId && client.socket.readyState === WebSocket.OPEN && client.id !== excludeClientId) {
         client.socket.send(data);
       }
     }

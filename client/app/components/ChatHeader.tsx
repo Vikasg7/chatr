@@ -5,14 +5,17 @@ interface ChatHeaderProps {
   roomName: string;
   subtitle?: string;
   onInvite?: () => void;
+  typingText?: string | null;
 }
 
-export function ChatHeader({ connected, roomName, subtitle, onInvite }: ChatHeaderProps) {
+export function ChatHeader({ connected, roomName, subtitle, onInvite, typingText }: ChatHeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80">
       <div>
         <div className="text-h6">{roomName}</div>
-        {subtitle && (
+        {typingText ? (
+          <div className="text-xs text-indigo-400 font-medium animate-pulse">{typingText}</div>
+        ) : subtitle && (
           <div className="text-xs text-slate-400 prose-constrained">{subtitle}</div>
         )}
       </div>

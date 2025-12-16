@@ -4,11 +4,12 @@ interface MsgInputProps {
   value: string;
   onChange: (val: string) => void;
   onSend: () => void;
+  onTyping?: (isTyping: boolean) => void; // New prop
   disabled?: boolean;
 }
 
-export function MsgInput({ value, onChange, onSend, disabled, }: MsgInputProps) {
-  
+export function MsgInput({ value, onChange, onSend, onTyping, disabled, }: MsgInputProps) {
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -23,7 +24,11 @@ export function MsgInput({ value, onChange, onSend, disabled, }: MsgInputProps) 
           <input
             className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-500"
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              onChange(e.target.value);
+              onTyping?.(true);
+            }}
+            onBlur={() => onTyping?.(false)}
             placeholder="Type a message…"
             onKeyDown={handleKeyDown}
           />

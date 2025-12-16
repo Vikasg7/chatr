@@ -43,6 +43,8 @@ export default function ChatPage() {
   const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
+  const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const { token, user, hydrated, setUser, setToken } = useAuthStore();
@@ -195,6 +197,36 @@ export default function ChatPage() {
 
     ws.onclose = () => setConnected(false);
   }
+
+  const handleTyping = useCallback((isTyping: boolean) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    if (isTyping) {
+      if (!typingTimeoutRef.current) {
+        ws.send(JSON.stringify({ type: "typing:start" }));
+      }
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+      typingTimeoutRef.current = setTimeout(() => {
+        ws.send(JSON.stringify({ type: "typing:stop" }));
+        typingTimeoutRef.current = null;
+      }, 2000);
+    } else {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+      ws.send(JSON.stringify({ type: "typing:stop" }));
+    }
+  }, []);
+
+  const getTypingText = () => {
+    if (typingUsers.size === 0) return null;
+    const ids = Array.from(typingUsers);
+    if (ids.length === 1) return "Someone is typing...";
+    if (ids.length === 2) return "Two people are typing...";
+    return "Several people are typing...";
+  };
 
   async function submitLogin(creds?: { email: string; password: string }) {
     if (formLoading) return;
@@ -413,6 +445,7 @@ export default function ChatPage() {
                 ? "Messages are synced in real time for this room."
                 : "Choose a room from the sidebar to start chatting."}
               onInvite={currentRoom?.ownerId === user?.id ? () => setShowInviteModal(true) : undefined}
+              typingText={getTypingText()}
             />
 
             {/* Messages */}
@@ -423,6 +456,7 @@ export default function ChatPage() {
               value={input}
               onChange={setInput}
               onSend={sendMsg}
+              onTyping={handleTyping}
               disabled={!connected || !currentRoom}
             />
 
