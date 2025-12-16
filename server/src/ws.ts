@@ -104,18 +104,27 @@ export class WSService {
         return;
       }
 
+      import { fetchMetadata } from './lib/metadata';
+
+      // ... (inside class, handleMessage method)
+
       if (msg.type === "message:new") {
         if (!client.roomId)
           return;
 
-        if (!client.roomId)
-          return;
+        // Fetch metadata if text exists
+        let metadata = undefined;
+        if (msg.text) {
+          const meta = await fetchMetadata(msg.text);
+          if (meta) metadata = meta;
+        }
 
         const message = await this.prisma.message.create({
           data: {
             text: msg.text || "", // Handle empty text if file only
             attachmentUrl: msg.attachmentUrl,
             attachmentType: msg.attachmentType,
+            metadata: metadata as any, // Cast to any or JsonValue
             senderId: client.userId!,
             roomId: client.roomId,
           },

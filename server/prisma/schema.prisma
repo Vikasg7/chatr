@@ -51,6 +51,7 @@ model Message {
   text      String?   // Make text optional if sending only image
   attachmentUrl  String?
   attachmentType String? // IMAGE, FILE
+  metadata       Json?   // Link preview data { title, description, image, url }
   createdAt DateTime  @default(now())
 
   sender    User      @relation(fields: [senderId], references: [id])

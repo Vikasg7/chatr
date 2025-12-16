@@ -23,6 +23,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "open-graph-scraper": "^1.1.1",
     "ws": "^8.18.3"
   },
   "devDependencies": {

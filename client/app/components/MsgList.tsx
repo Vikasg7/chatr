@@ -105,6 +105,29 @@ export function MessageList({ messages }: MessageListProps) {
                         )}
                       </div>
                     )}
+                    {m.metadata && (m.metadata as any).title && (
+                      <a
+                        href={(m.metadata as any).url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block mt-2 rounded-lg border border-slate-700 bg-slate-800/50 overflow-hidden hover:bg-slate-800 transition max-w-sm group"
+                      >
+                        {(m.metadata as any).image && (
+                          <div className="h-32 w-full relative">
+                            <img src={(m.metadata as any).image} className="w-full h-full object-cover" alt="preview" />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <div className="text-sm font-semibold text-slate-200 group-hover:text-indigo-400 transition truncate">{(m.metadata as any).title}</div>
+                          {(m.metadata as any).description && (
+                            <div className="text-xs text-slate-400 mt-1 line-clamp-2">{(m.metadata as any).description}</div>
+                          )}
+                          <div className="text-[10px] text-slate-500 mt-2 uppercase tracking-wider font-medium">
+                            {new URL((m.metadata as any).url).hostname}
+                          </div>
+                        </div>
+                      </a>
+                    )}
                   </div>
                 </div>
               </motion.div>
