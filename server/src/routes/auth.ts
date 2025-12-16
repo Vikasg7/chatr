@@ -10,7 +10,7 @@ export default function (prisma: PrismaClient) {
 
   router.post("/signup", async (req, res) => {
     const { email, password, name } = req.body;
-    if (!email || !password) 
+    if (!email || !password)
       return res.status(400).json({ error: "email+password required" });
 
     try {
@@ -33,7 +33,7 @@ export default function (prisma: PrismaClient) {
 
   router.post("/login", async (req, res) => {
     const { email, password } = req.body;
-    if (!email || !password) 
+    if (!email || !password)
       return res.status(400).json({ error: "email+password required" });
 
     try {
@@ -57,7 +57,7 @@ export default function (prisma: PrismaClient) {
     const auth = req.headers.authorization;
     if (!auth || !auth.startsWith("Bearer "))
       return res.status(401).json({ error: "unauthorized" });
-    
+
     const token = auth.slice(7);
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
@@ -65,7 +65,7 @@ export default function (prisma: PrismaClient) {
       if (!user)
         return res.status(401).json({ error: "unauthorized" });
 
-      res.json({ id: user.id, email: user.email, name: user.name, onboardingSeen: user.onboardingSeen ?? false });
+      res.json({ id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, onboardingSeen: user.onboardingSeen ?? false });
     } catch (err) {
       console.error(err);
       res.status(401).json({ error: "unauthorized" });
@@ -89,6 +89,60 @@ export default function (prisma: PrismaClient) {
     } catch (err) {
       console.error(err);
       res.status(401).json({ error: "unauthorized" });
+    }
+  });
+
+  // Profile Update (Name & Avatar)
+  const uploadDir = require("path").join(__dirname, "../../public/uploads");
+  const multer = require("multer");
+  if (!require("fs").existsSync(uploadDir)) {
+    require("fs").mkdirSync(uploadDir, { recursive: true });
+  }
+  const storage = multer.diskStorage({
+    destination: (req: any, file: any, cb: any) => cb(null, uploadDir),
+    filename: (req: any, file: any, cb: any) => {
+      const ext = require("path").extname(file.originalname);
+      const name = crypto.randomUUID();
+      cb(null, `${name}${ext}`);
+    },
+  });
+  const upload = multer({ storage });
+
+  router.put("/profile", upload.single("avatar"), async (req: any, res) => {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith("Bearer ")) return res.status(401).json({ error: "unauthorized" });
+    const token = auth.slice(7);
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+      const userId = decoded.userId;
+
+      const { name } = req.body;
+      const file = req.file;
+
+      const updateData: any = {};
+      if (name) updateData.name = name;
+      if (file) {
+        updateData.avatarUrl = `/uploads/${file.filename}`;
+      }
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: updateData
+      });
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+          onboardingSeen: user.onboardingSeen ?? false
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Update failed" });
     }
   });
 

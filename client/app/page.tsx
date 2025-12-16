@@ -167,7 +167,7 @@ export default function ChatPage() {
 
             <MessageList
               messages={chat.messages}
-              currentUserId={user?.id}
+              currentUserId={user?.id || null}
               onReact={chat.sendReaction}
             />
 
