@@ -59,6 +59,22 @@ model Message {
 
   room      Room      @relation(fields: [roomId], references: [id])
   roomId    Int
+
+  reactions Reaction[]
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  emoji     String
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  messageId Int
+  message   Message  @relation(fields: [messageId], references: [id])
+
+  @@unique([userId, messageId, emoji])
 }
 
 enum RoomType {

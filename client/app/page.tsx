@@ -199,6 +199,13 @@ export default function ChatPage() {
           next.delete(data.userId);
           return next;
         });
+      } else if (data.type === "message:react") {
+        setMessages(prev => prev.map(m => {
+          if (m.id === data.messageId) {
+            return { ...m, reactions: data.reactions };
+          }
+          return m;
+        }));
       }
     };
 

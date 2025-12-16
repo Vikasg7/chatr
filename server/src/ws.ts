@@ -149,6 +149,43 @@ export class WSService {
           userId: client.userId,
           roomId: client.roomId // useful context
         }, client.id); // exclude sender
+      } else if (msg.type === "message:react") {
+        if (!client.roomId || !msg.messageId || !msg.emoji) return;
+
+        // Toggle logic: check if exists
+        const existing = await this.prisma.reaction.findUnique({
+          where: {
+            userId_messageId_emoji: {
+              userId: client.userId!,
+              messageId: msg.messageId,
+              emoji: msg.emoji
+            }
+          }
+        });
+
+        if (existing) {
+          await this.prisma.reaction.delete({ where: { id: existing.id } });
+        } else {
+          await this.prisma.reaction.create({
+            data: {
+              userId: client.userId!,
+              messageId: msg.messageId,
+              emoji: msg.emoji
+            }
+          });
+        }
+
+        // Fetch updated reactions for this message to broadcast accurate state
+        const reactions = await this.prisma.reaction.findMany({
+          where: { messageId: msg.messageId },
+          include: { user: { select: { id: true, name: true } } }
+        });
+
+        this.broadcastToRoom(client.roomId, {
+          type: "message:react",
+          messageId: msg.messageId,
+          reactions
+        });
       }
     } catch (err) {
       console.error("WS error:", err);

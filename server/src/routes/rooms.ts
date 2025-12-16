@@ -106,7 +106,10 @@ export default (prisma: PrismaClient) => {
       where: { roomId },
       orderBy: { id: "asc" },
       include: {
-        sender: { select: { id: true, email: true, name: true } },
+        sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
+        reactions: {
+          include: { user: { select: { id: true, name: true } } }
+        }
       },
     });
 

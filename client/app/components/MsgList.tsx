@@ -8,12 +8,13 @@ import { Avatar } from "./Avatar";
 
 interface MessageListProps {
   messages: any[];
+  currentUserId: number | null;
+  onReact?: (msgId: number, emoji: string) => void;
 }
 
-export function MessageList({ messages }: MessageListProps) {
+export function MessageList({ messages, currentUserId, onReact }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const user = useAuthStore((s) => s.user);
-  const userId = user?.id;
+  const userId = currentUserId;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -130,11 +131,60 @@ export function MessageList({ messages }: MessageListProps) {
                     )}
                   </div>
                 </div>
+
+                {/* Reactions */}
+                <div className="mt-2 flex items-center gap-1 flex-wrap">
+                  {Object.entries(
+                    (m.reactions || []).reduce((acc: any, r: any) => {
+                      acc[r.emoji] = acc[r.emoji] || [];
+                      acc[r.emoji].push(r);
+                      return acc;
+                    }, {})
+                  ).map(([emoji, reactions]: [string, any[]]) => {
+                    const hasReacted = reactions.some(r => r.user.id === userId);
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => onReact && onReact(m.id, emoji)}
+                        className={`
+                                    flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border transition
+                                    ${hasReacted
+                            ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-200'
+                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}
+                                `}
+                      >
+                        <span>{emoji}</span>
+                        <span>{reactions.length}</span>
+                      </button>
+                    );
+                  })}
+
+                  <div className="relative group/add">
+                    <button className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition text-xs opacity-0 group-hover:opacity-100 group-hover/add:opacity-100 transition-opacity">
+                      +
+                    </button>
+                    {/* Simple Hover Popup for adding reactions */}
+                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover/add:flex bg-slate-900 border border-slate-700 rounded-full shadow-lg p-1 gap-1 z-10">
+                      {["👍", "❤️", "😂", "😮", "😢", "🔥"].map(emoji => (
+                        <button
+                          key={emoji}
+                          onClick={() => onReact && onReact(m.id, emoji)}
+                          className="w-8 h-8 flex items-center justify-center hover:bg-slate-800 rounded-full text-lg transition"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
               </motion.div>
-            );
+      );
           })}
-        </AnimatePresence>
-      )}
-    </div>
+    </AnimatePresence>
+  )
+}
+    </div >
   );
 }
