@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { Avatar } from "./Avatar";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/stores/auth";
 import * as api from "@/lib/api";
@@ -65,17 +66,18 @@ export function StartDmModal({ open, onClose, onSelectUser, }: StartDmModalProps
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.18 }}
-        className="bg-slate-900 p-5 rounded-2xl border border-slate-700 w-[22rem] shadow-xl"
+        className="card w-[22rem]"
       >
-        <h2 className="text-base font-semibold mb-3">Start a Direct Message</h2>
+        <div className="card-header">Start a Direct Message</div>
 
-        <input
-          className="w-full bg-slate-800 text-slate-200 p-2 rounded-lg border border-slate-700
-                     placeholder:text-slate-500 text-sm"
-          placeholder="Search by name or email…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <div className="mt-1">
+          <input
+            className="w-full input text-sm"
+            placeholder="Search by name or email…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
 
         <div className="mt-3 max-h-64 overflow-y-auto scroll-thin">
           {filtered.length === 0 ? (
@@ -87,13 +89,18 @@ export function StartDmModal({ open, onClose, onSelectUser, }: StartDmModalProps
               <button
                 key={u.id}
                 onClick={() => handleSelect(u)}
-                className="w-full flex flex-col items-start px-2.5 py-2 rounded-lg text-sm
-                           hover:bg-slate-800 transition"
+                className="w-full flex flex-row items-center gap-3 px-2 py-2 hover:bg-slate-800 transition"
               >
-                <span className="font-medium">
-                  {u.name || u.email.split("@")[0]}
-                </span>
-                <span className="text-[11px] text-slate-500">{u.email}</span>
+                <Avatar src={null} name={u.name} email={u.email} size={36} />
+
+                <div className="text-left min-w-0">
+                  <div className="dm-name">
+                    {u.name || u.email.split("@")[0]}
+                  </div>
+                  <div className="meta-small truncate">
+                    {u.email}
+                  </div>
+                </div>
               </button>
             ))
           )}
@@ -102,7 +109,7 @@ export function StartDmModal({ open, onClose, onSelectUser, }: StartDmModalProps
         <div className="flex justify-end mt-3">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
+            className="btn-ghost"
           >
             Close
           </button>

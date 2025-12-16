@@ -5,30 +5,102 @@ import { requireAuth, AuthRequest } from "../middleware/auth";
 export default (prisma: PrismaClient) => {
   const router = Router();
 
-  // CREATE ROOM
+  // CREATE ROOM (Private by default)
   router.post("/", requireAuth, async (req: AuthRequest, res) => {
     const { name } = req.body;
+    if (!name) return res.status(400).json({ error: "Name required" });
 
-    if (!name) 
-      return res.status(400).json({ error: "Name required" });
-
-    const room = await prisma.room.create({ data: { name } });
+    // 1. Create room
+    // 2. Add creator as member
+    // 3. Set owner
+    const room = await prisma.room.create({
+      data: {
+        name,
+        isPrivate: true,
+        ownerId: req.user!.id,
+        members: {
+          create: { userId: req.user!.id }
+        }
+      },
+    });
 
     res.json(room);
   });
 
-  // LIST ROOMS
-  router.get("/", requireAuth, async (_req, res) => {
+  // LIST ROOMS (Only ones I am a member of)
+  router.get("/", requireAuth, async (req: AuthRequest, res) => {
+    const userId = req.user!.id;
+    // We want rooms where type=GROUP AND (isPrivate=false OR members includes me)
+    // But per requirement, ALL rooms are private now. 
+    // effectively: members includes me OR type=DM
+    // logic: fetch all rooms where I am a member.
+
+    // Note: The original code separated GROUP and DM logic implicitly or explicitly?
+    // Original: where: { type: "GROUP" }
+
+    // New Logic: 
+    // Find all rooms (GROUP) where I am a member.
     const rooms = await prisma.room.findMany({
-      where: { type: "GROUP" },
+      where: {
+        type: "GROUP",
+        members: {
+          some: { userId }
+        }
+      },
       orderBy: { id: "asc" },
+      include: {
+        owner: { select: { id: true, name: true, email: true } } // useful for UI
+      }
     });
     res.json(rooms);
   });
 
-  // GET MESSAGES FOR ROOM
-  router.get("/:roomId/messages", requireAuth, async (req, res) => {
+  // INVITE USER
+  router.post("/:roomId/invite", requireAuth, async (req: AuthRequest, res) => {
     const roomId = parseInt(req.params.roomId);
+    const { email } = req.body;
+    const userId = req.user!.id;
+
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    // 1. Check if room exists and I am owner
+    const room = await prisma.room.findUnique({
+      where: { id: roomId }
+    });
+
+    if (!room) return res.status(404).json({ error: "Room not found" });
+    if (room.ownerId !== userId) return res.status(403).json({ error: "Only owner can invite" });
+
+    // 2. Find target user
+    const target = await prisma.user.findUnique({ where: { email } });
+    if (!target) return res.status(404).json({ error: "User not found" });
+
+    // 3. Add to members (ignore if already there)
+    try {
+      await prisma.roomMember.create({
+        data: {
+          roomId,
+          userId: target.id
+        }
+      });
+    } catch (e) {
+      // ignore unique constraint
+    }
+
+    res.json({ success: true });
+  });
+
+  // GET MESSAGES FOR ROOM
+  router.get("/:roomId/messages", requireAuth, async (req: AuthRequest, res) => {
+    const roomId = parseInt(req.params.roomId);
+    const userId = req.user!.id;
+
+    // Security: Check membership
+    const membership = await prisma.roomMember.findFirst({
+      where: { roomId, userId }
+    });
+
+    if (!membership) return res.status(403).json({ error: "Access denied" });
 
     const msgs = await prisma.message.findMany({
       where: { roomId },

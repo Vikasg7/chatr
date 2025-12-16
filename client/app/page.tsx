@@ -13,6 +13,7 @@ import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
 import { CreateRoomModal } from "./components/CreateRoomModal";
 import { StartDmModal } from "./components/StartDmModal";
+import { InviteUserModal } from "./components/InviteUserModal";
 import Onboarding from "./components/Onboarding";
 import { motion } from 'framer-motion';
 
@@ -36,16 +37,17 @@ export default function ChatPage() {
   const [formName, setFormName] = useState("");
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
   const [showStartDmModal, setShowStartDmModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [rooms, setRooms] = useState<any[]>([]);
   const [dmRooms, setDmRooms] = useState<any[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  
+
   const wsRef = useRef<WebSocket | null>(null);
   const { token, user, hydrated, setUser, setToken } = useAuthStore();
 
   const addMsg = useCallback((msg: Message) => {
-    setMessages(prevMessages => 
+    setMessages(prevMessages =>
       [...prevMessages, msg].sort((a, b) => a.id - b.id)
     );
   }, []);
@@ -90,6 +92,16 @@ export default function ChatPage() {
     setCurrentRoomId(room.id);
     joinRoom(room.id);
   }, []);
+
+  const inviteUser = useCallback(async (email: string) => {
+    if (!currentRoomId) return;
+    try {
+      await api.post(`/rooms/${currentRoomId}/invite`, { email });
+      toastLib.showToast("User invited!", "success");
+    } catch (e: any) {
+      toastLib.showToast(e.message || "Failed to invite", "error");
+    }
+  }, [currentRoomId]);
 
   const sendMsg = useCallback(() => {
     const ws = wsRef.current;
@@ -224,7 +236,7 @@ export default function ChatPage() {
           <div className="text-left relative">
             <div className="absolute -left-10 -top-10 w-56 h-56 rounded-full bg-gradient-to-br from-indigo-700/30 to-blue-400/20 blur-3xl opacity-40 pointer-events-none" />
             <motion.h1 initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.36 }} className="text-5xl font-extrabold text-slate-100 mb-4">Chatr</motion.h1>
-            <motion.p initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4, delay: 0.06 }} className="text-slate-300 max-w-lg mb-6">A simple, private chat experience. Connect with your team and friends — messages sync in real time.</motion.p>
+            <motion.p initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.4, delay: 0.06 }} className="text-slate-300 prose-constrained mb-6">A simple, private chat experience. Connect with your team and friends — messages sync in real time.</motion.p>
 
             <div className="flex items-center gap-4">
               <motion.ul initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }} className="text-sm text-slate-400 space-y-2">
@@ -246,25 +258,25 @@ export default function ChatPage() {
 
                 <div>
                   <button
-                  onClick={() => {
-                    setFormMode("login");
-                    // prefill visually and auto-submit demo credentials
-                    setFormEmail("demo@chatr.local");
-                    setFormPassword("password");
-                    // call submitLogin with explicit creds to avoid waiting on state
-                    submitLogin({ email: "demo@chatr.local", password: "password" });
-                  }}
-                  className="rounded-full bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow transform-gpu transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
-                >
-                  Try demo
-                </button>
+                    onClick={() => {
+                      setFormMode("login");
+                      // prefill visually and auto-submit demo credentials
+                      setFormEmail("demo@chatr.local");
+                      setFormPassword("password");
+                      // call submitLogin with explicit creds to avoid waiting on state
+                      submitLogin({ email: "demo@chatr.local", password: "password" });
+                    }}
+                    className="rounded-full bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow transform-gpu transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
+                  >
+                    Try demo
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="w-full max-w-md mx-auto">
-            <div className="bg-gradient-to-br from-slate-900/80 to-slate-900/70 border border-slate-800 rounded-3xl p-6 shadow-2xl transform-gpu transition-transform duration-150 hover:scale-[1.01]">
+            <div className="card transform-gpu transition-transform duration-150 hover:scale-[1.01]">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-slate-100">{formMode === "login" ? "Sign in" : "Create account"}</h2>
                 <div className="text-sm text-slate-400">
@@ -291,7 +303,7 @@ export default function ChatPage() {
 
               <div className="flex items-center justify-between gap-3">
                 {formMode === "login" ? (
-                  <button disabled={formLoading || !formEmail.trim() || !formPassword.trim()} onClick={submitLogin} className="flex-1 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-slate-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">{formLoading ? "Signing in…" : "Sign in"}</button>
+                  <button disabled={formLoading || !formEmail.trim() || !formPassword.trim()} onClick={() => submitLogin()} className="flex-1 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-slate-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">{formLoading ? "Signing in…" : "Sign in"}</button>
                 ) : (
                   <button disabled={formLoading || !formEmail.trim() || !formPassword.trim() || !formName.trim()} onClick={submitSignup} className="flex-1 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-slate-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">{formLoading ? "Creating…" : "Create account"}</button>
                 )}
@@ -314,8 +326,8 @@ export default function ChatPage() {
   }
 
   const currentRoom =
-    rooms.find((r: any) => r.id === currentRoomId) || 
-    dmRooms.find((r: any) => r.id === currentRoomId) || 
+    rooms.find((r: any) => r.id === currentRoomId) ||
+    dmRooms.find((r: any) => r.id === currentRoomId) ||
     null;
 
   return (
@@ -324,96 +336,104 @@ export default function ChatPage() {
       <Onboarding />
       <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col">
 
-      {/* Main layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-64 border-r border-slate-800 bg-slate-950/90 px-4 py-4 flex flex-col">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">
-              Rooms
-            </h2>
-            <button
-              onClick={() => setShowCreateRoomModal(true)}
-              className="text-slate-300 hover:text-indigo-400 transition text-xl leading-none"
-              title="Create Room"
-            >
-              +
-            </button>        
-          </div>
+        {/* Main layout */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <aside className="w-64 border-r border-slate-800 bg-slate-950/90 px-4 py-4 flex flex-col">
+            <div className="mb-1 flex items-center justify-between">
+              <h2 className="sidebar-heading">
+                Rooms
+              </h2>
+              <button
+                onClick={() => setShowCreateRoomModal(true)}
+                className="text-slate-300 hover:text-indigo-400 transition text-xl leading-none"
+                title="Create Room"
+              >
+                +
+              </button>
+            </div>
 
-          <RoomList
-            rooms={rooms}
-            currentRoomId={ currentRoomId }
-            onSelect={selectRoom}
-            currentUserId={user?.id ?? null}
+            <RoomList
+              rooms={rooms}
+              currentRoomId={currentRoomId}
+              onSelect={selectRoom}
+              currentUserId={user?.id ?? null}
+            />
+
+            {/* Direct Messages section */}
+            <div className="mt-4 mb-1 flex items-center justify-between">
+              <h2 className="sidebar-heading">
+                Direct Messages
+              </h2>
+              <button
+                onClick={() => setShowStartDmModal(true)}
+                className="text-slate-300 hover:text-indigo-400 transition text-lg leading-none px-1"
+                title="Start a direct message"
+              >
+                +
+              </button>
+            </div>
+
+            <RoomList
+              rooms={dmRooms}
+              currentRoomId={currentRoomId}
+              onSelect={selectRoom}
+              currentUserId={user?.id ?? null}
+            />
+
+            <div className="pt-3 border-t border-slate-800 meta-small mt-auto">
+              Connected as <span className="font-medium">{user?.email}</span>
+            </div>
+          </aside>
+
+          {/* Chat area */}
+          <section className="flex-1 flex flex-col">
+            {/* Chat header */}
+            <ChatHeader
+              connected={connected}
+              roomName={currentRoom ? currentRoom.name : "Select a room"}
+              subtitle={currentRoom
+                ? "Messages are synced in real time for this room."
+                : "Choose a room from the sidebar to start chatting."}
+              onInvite={currentRoom?.ownerId === user?.id ? () => setShowInviteModal(true) : undefined}
+            />
+
+            {/* Messages */}
+            <MessageList messages={messages} />
+
+            {/* Input bar */}
+            <MsgInput
+              value={input}
+              onChange={setInput}
+              onSend={sendMsg}
+              disabled={!connected || !currentRoom}
+            />
+
+          </section>
+
+          {/* Create Room Modal */}
+          <CreateRoomModal
+            open={showCreateRoomModal}
+            onClose={() => setShowCreateRoomModal(false)}
+            onCreate={(name) => createRoom(name)}
           />
 
-          {/* Direct Messages section */}
-          <div className="mt-4 mb-1 flex items-center justify-between">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Direct Messages
-            </h2>
-            <button
-              onClick={() => setShowStartDmModal(true)}
-              className="text-slate-300 hover:text-indigo-400 transition text-lg leading-none px-1"
-              title="Start a direct message"
-            >
-            +
-            </button>
-          </div>
-
-          <RoomList
-            rooms={dmRooms}
-            currentRoomId={ currentRoomId }
-            onSelect={selectRoom}
-            currentUserId={user?.id ?? null}
+          {/* DM Modal */}
+          <StartDmModal
+            open={showStartDmModal}
+            onClose={() => setShowStartDmModal(false)}
+            onSelectUser={startDm}
           />
 
-          <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 mt-auto">
-            Connected as <span className="font-medium">{user?.email}</span>
-          </div>
-        </aside>
-
-        {/* Chat area */}
-        <section className="flex-1 flex flex-col">
-          {/* Chat header */}
-          <ChatHeader 
-            connected={connected} 
-            roomName={currentRoom ? currentRoom.name : "Select a room"}
-            subtitle={currentRoom
-              ? "Messages are synced in real time for this room."
-              : "Choose a room from the sidebar to start chatting."}
+          {/* Invite User Modal */}
+          <InviteUserModal
+            open={showInviteModal}
+            onClose={() => setShowInviteModal(false)}
+            onInvite={inviteUser}
           />
 
-          {/* Messages */}
-          <MessageList messages={messages}/>
-
-          {/* Input bar */}
-          <MsgInput
-            value={input}
-            onChange={setInput}
-            onSend={sendMsg}
-            disabled={!connected || !currentRoom}
-          />
- 
-        </section>
-
-        {/* Create Room Modal */}
-        <CreateRoomModal
-          open={showCreateRoomModal}
-          onClose={() => setShowCreateRoomModal(false)}
-          onCreate={(name) => createRoom(name)}
-        />
-
-        {/* DM Modal */}
-        <StartDmModal
-          open={showStartDmModal}
-          onClose={() => setShowStartDmModal(false)}
-          onSelectUser={startDm}
-        />
-
-      </div>
-    </main>
+        </div>
+      </main>
     </>
   );
 }

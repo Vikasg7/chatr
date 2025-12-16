@@ -32,13 +32,12 @@ export function CreateRoomModal({ open, onClose, onCreate }: CreateRoomModalProp
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className="bg-slate-900 p-6 rounded-2xl border border-slate-700 w-80 shadow-xl"
+        className="card w-80"
       >
-        <h2 className="text-lg font-semibold mb-4">Create Room</h2>
+        <h2 className="text-h6 mb-4">Create Room</h2>
 
         <input
-          className="w-full bg-slate-800 text-slate-200 p-2 rounded-lg border border-slate-700
-                     placeholder:text-slate-500"
+          className="w-full input placeholder:text-slate-500"
           placeholder="Room name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -48,14 +47,14 @@ export function CreateRoomModal({ open, onClose, onCreate }: CreateRoomModalProp
         <div className="flex justify-end gap-2 mt-4">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-sm rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600"
+            className="btn-ghost"
           >
             Cancel
           </button>
 
           <button
             onClick={submit}
-            className="px-3 py-1.5 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-500"
+            className="btn-primary"
           >
             Create
           </button>

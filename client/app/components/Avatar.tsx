@@ -43,7 +43,7 @@ export function Avatar({ name, email, src, size = 40, className = "", alt }: Ava
     minWidth: size,
     borderRadius: size / 4,
     background: src ? undefined : bg,
-    display: "inline-flex",
+    display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: Math.max(12, Math.floor(size / 3.2)),
@@ -52,8 +52,11 @@ export function Avatar({ name, email, src, size = 40, className = "", alt }: Ava
     overflow: "hidden",
   };
 
+  // Map common sizes to token classes for consistent radii and layout
+  const sizeClass = size === 28 ? "avatar-sm" : size === 36 ? "avatar-md" : "";
+
   return (
-    <div className={`avatar ${className}`} style={style} aria-label={alt || name || email}>
+    <div className={`avatar ${sizeClass} ${className}`} style={style} aria-label={alt || name || email}>
       {src ? (
         // Next Image is preferred in Next.js; fallback to normal img if you prefer
         // make sure external domains are allowed in next.config.js if using external urls

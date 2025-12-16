@@ -16,17 +16,22 @@ model User {
   onboardingSeen Boolean   @default(false)
   createdAt DateTime      @default(now())
   messages  Message[]
-  rooms     RoomMember[]  // <-- New: rooms the user belongs to
+  rooms     RoomMember[]
+  ownedRooms Room[] @relation("RoomOwner")
 }
 
 model Room {
   id        Int           @id @default(autoincrement())
   name      String?
   type      RoomType      @default(GROUP)
+  isPrivate Boolean       @default(true)
   createdAt DateTime      @default(now())
 
+  ownerId   Int?
+  owner     User?         @relation("RoomOwner", fields: [ownerId], references: [id])
+
   messages  Message[]
-  members   RoomMember[]  // <-- New: who belongs to this room
+  members   RoomMember[]
 }
 
 model RoomMember {

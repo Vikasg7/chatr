@@ -24,7 +24,7 @@ export function MessageList({ messages }: MessageListProps) {
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto px-6 py-4 space-y-0 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 scroll-thin"
+      className="flex-1 overflow-y-auto content-pad space-y-0 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 scroll-thin"
     >
       {messages.length === 0 ? (
         <div className="h-full flex items-center justify-center text-sm text-slate-500">
@@ -67,14 +67,14 @@ export function MessageList({ messages }: MessageListProps) {
                       size={28}
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-full" />
+                    <div className="avatar-sm" />
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   {firstInGroup && (
                     <div className="flex items-baseline gap-2">
-                      <div className="text-sm font-semibold text-slate-250">{m.sender.name || m.sender.email}</div>
+                      <div className="msg-sender">{m.sender.name || m.sender.email}</div>
                       <div className="text-xs text-slate-400">{format.time(m.createdAt)}</div>
                     </div>
                   )}

@@ -47,14 +47,17 @@ export function RoomList({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.1 }}
-            className={`relative w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-3 ${
-              active
-                ? "bg-indigo-600 text-slate-50 shadow-sm"
-                : "text-slate-300 hover:bg-slate-800"
-            }`}
+            className={`relative w-full rounded-xl text-sm font-medium
+              flex flex-row items-center gap-3 px-3 py-2 text-left transition-colors
+              ${
+                active
+                  ? "bg-indigo-600 text-slate-50 shadow-sm"
+                  : "text-slate-300 hover:bg-slate-800"
+              }
+            `}
           >
             {/* Left: avatar / room badge */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               {isDm && otherMember ? (
                 <Avatar
                   src={otherMember.avatarUrl ?? null}
@@ -63,25 +66,23 @@ export function RoomList({
                   size={36}
                 />
               ) : (
-                <div
-                  aria-hidden
-                  className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-semibold ${
-                    active ? "bg-indigo-700 text-slate-100" : "bg-slate-800 text-slate-300"
-                  }`}
-                >
-                  {String(label)
-                    .trim()
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
+                <Avatar
+                  src={null}
+                  name={String(label)}
+                  email={undefined}
+                  size={36}
+                />
               )}
             </div>
 
-            {/* Middle: label */}
-            <div className="flex-1 text-left">
-              <div className="truncate">{label}</div>
+            {/* Right: label + meta */}
+            <div className="min-w-0 flex-1 text-left">
+              <div className="room-name truncate leading-tight">
+                {label}
+              </div>
+
               {isDm && otherMember?.email && (
-                <div className="text-[11px] text-slate-400 truncate">
+                <div className="meta-small truncate">
                   {otherMember.email}
                 </div>
               )}
@@ -91,7 +92,7 @@ export function RoomList({
             {active && (
               <motion.div
                 layoutId="activeRoomIndicator"
-                className="absolute inset-0 rounded-xl border border-indigo-400/20"
+                className="pointer-events-none absolute inset-0 rounded-xl border border-indigo-400/20"
               />
             )}
           </motion.button>

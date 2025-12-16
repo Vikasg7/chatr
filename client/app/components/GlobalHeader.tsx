@@ -21,14 +21,14 @@ export default function GlobalHeader() {
   }, [hydrated, token]);
 
   return (
-    <header className="flex h-[70px] items-center justify-between px-6 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur z-20">
+    <header className="app-header z-20">
       <div className="flex items-center gap-2">
         <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center text-sm font-bold">
           C
         </div>
         <div>
-          <div className="text-lg font-semibold tracking-tight">Chatr</div>
-          <div className="text-xs text-slate-500">
+          <div className="text-h6">Chatr</div>
+          <div className="text-xs text-slate-400">
             Real-time chat • full-stack playground
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function GlobalHeader() {
             </span>
             <button
               onClick={logout}
-              className="rounded-full border border-slate-700 px-3 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 transition"
+              className="btn-ghost"
             >
               Logout
             </button>

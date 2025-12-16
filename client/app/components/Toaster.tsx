@@ -57,13 +57,13 @@ export default function Toaster() {
             className="pointer-events-auto"
           >
             <div
-              className={`max-w-sm w-full px-3 py-2 rounded shadow-lg text-sm break-words border-l-4 flex items-center justify-between gap-3 ${
+              className={`toast-card ${
                 t.type === "error"
                   ? "bg-red-800 border-red-400 text-white"
                   : t.type === "success"
                   ? "bg-green-800 border-green-400 text-white"
                   : "bg-slate-800 border-slate-600 text-slate-100"
-              }`}
+              } flex items-center justify-between gap-3`}
             >
               <div className="flex items-center flex-1">
                 <Icon type={t.type} />
@@ -81,7 +81,7 @@ export default function Toaster() {
                       }
                       toastLib.dismissToast(t.id);
                     }}
-                    className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
+                    className="btn-ghost btn-ghost-sm"
                   >
                     {t.action.label}
                   </button>

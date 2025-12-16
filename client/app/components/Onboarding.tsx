@@ -72,47 +72,47 @@ export default function Onboarding() {
             transition={{ duration: 0.18 }}
           >
             <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-slate-100">{steps[step].title}</h3>
-                <p className="mt-2 text-sm text-slate-300">{steps[step].desc}</p>
+          <div className="flex-1">
+            <h3 className="card-header text-slate-100">{steps[step].title}</h3>
+            <p className="mt-2 text-sm text-slate-300">{steps[step].desc}</p>
 
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="flex gap-2">
-                    {steps.map((_, i) => (
-                      <div key={i} className={`h-2 w-8 rounded-full ${i === step ? 'bg-indigo-500' : 'bg-slate-700'}`} />
-                    ))}
-                  </div>
-
-                  <div className="ml-auto text-xs text-slate-400">Step {step + 1} of {steps.length}</div>
-                </div>
+            <div className="mt-4 flex items-center gap-2">
+              <div className="flex gap-2">
+                {steps.map((_, i) => (
+                  <div key={i} className={`h-2 w-8 rounded-full ${i === step ? 'bg-indigo-500' : 'bg-slate-700'}`} />
+                ))}
               </div>
 
-              <div className="flex flex-col items-end gap-2">
-                <button onClick={() => close(true)} className="text-xs text-slate-400 hover:text-slate-200">Don't show again</button>
-                <button onClick={() => close(false)} className="text-xs text-slate-400 hover:text-slate-200">Close</button>
-              </div>
+              <div className="ml-auto text-xs text-slate-400">Step {step + 1} of {steps.length}</div>
             </div>
+          </div>
 
-            <div className="mt-6 flex items-center justify-between">
-              <div>
-                <button
-                  disabled={step === 0}
-                  onClick={() => setStep((s) => Math.max(0, s - 1))}
-                  className="rounded-md px-3 py-2 bg-slate-800/60 text-sm text-slate-200 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-              </div>
+          <div className="flex flex-col items-end gap-2">
+            <button onClick={() => close(true)} className="btn-ghost">Don't show again</button>
+            <button onClick={() => close(false)} className="btn-ghost">Close</button>
+          </div>
+        </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
-                  className="rounded-md px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-sm text-white"
-                >
-                  {step === steps.length - 1 ? 'Finish' : 'Next'}
-                </button>
-              </div>
-            </div>
+        <div className="mt-6 flex items-center justify-between">
+          <div>
+            <button
+              disabled={step === 0}
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              className="btn-ghost disabled:opacity-40"
+            >
+              Previous
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
+              className="btn-primary"
+            >
+              {step === steps.length - 1 ? 'Finish' : 'Next'}
+            </button>
+          </div>
+        </div>
           </motion.div>
         </motion.div>
       )}
