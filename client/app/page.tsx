@@ -42,6 +42,7 @@ export default function ChatPage() {
   const [dmRooms, setDmRooms] = useState<any[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
 
   const wsRef = useRef<WebSocket | null>(null);
   const { token, user, hydrated, setUser, setToken } = useAuthStore();
@@ -175,6 +176,20 @@ export default function ChatPage() {
 
       if (data.type === "message:new") {
         addMsg(data.message);
+      } else if (data.type === "status:list") {
+        setOnlineUsers(new Set(data.users));
+      } else if (data.type === "status:online") {
+        setOnlineUsers(prev => {
+          const next = new Set(prev);
+          next.add(data.userId);
+          return next;
+        });
+      } else if (data.type === "status:offline") {
+        setOnlineUsers(prev => {
+          const next = new Set(prev);
+          next.delete(data.userId);
+          return next;
+        });
       }
     };
 
@@ -358,6 +373,7 @@ export default function ChatPage() {
               currentRoomId={currentRoomId}
               onSelect={selectRoom}
               currentUserId={user?.id ?? null}
+              onlineUsers={onlineUsers}
             />
 
             {/* Direct Messages section */}
@@ -379,6 +395,7 @@ export default function ChatPage() {
               currentRoomId={currentRoomId}
               onSelect={selectRoom}
               currentUserId={user?.id ?? null}
+              onlineUsers={onlineUsers}
             />
 
             <div className="pt-3 border-t border-slate-800 meta-small mt-auto">

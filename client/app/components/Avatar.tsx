@@ -10,6 +10,7 @@ type AvatarProps = {
   size?: number; // px dimension
   className?: string;
   alt?: string;
+  online?: boolean; // New prop
 };
 
 function hashToHue(s: string) {
@@ -31,7 +32,7 @@ function initials(name?: string | null, email?: string) {
   return "?";
 }
 
-export function Avatar({ name, email, src, size = 40, className = "", alt }: AvatarProps) {
+export function Avatar({ name, email, src, size = 40, className = "", alt, online }: AvatarProps) {
   const fallback = initials(name, email);
   const seed = (name || email || "anon").toString();
   const hue = hashToHue(seed);
@@ -50,19 +51,26 @@ export function Avatar({ name, email, src, size = 40, className = "", alt }: Ava
     fontWeight: 600,
     color: "white",
     overflow: "hidden",
+    position: "relative",
   };
 
   // Map common sizes to token classes for consistent radii and layout
   const sizeClass = size === 28 ? "avatar-sm" : size === 36 ? "avatar-md" : "";
 
   return (
-    <div className={`avatar ${sizeClass} ${className}`} style={style} aria-label={alt || name || email}>
-      {src ? (
-        // Next Image is preferred in Next.js; fallback to normal img if you prefer
-        // make sure external domains are allowed in next.config.js if using external urls
-        <Image src={src} alt={alt || name || email || "avatar"} width={size} height={size} style={{ objectFit: "cover" }} />
-      ) : (
-        <span>{fallback}</span>
+    <div className={`relative ${className}`}>
+      <div className={`avatar ${sizeClass}`} style={style} aria-label={alt || name || email}>
+        {src ? (
+          // Next Image is preferred in Next.js; fallback to normal img if you prefer
+          // make sure external domains are allowed in next.config.js if using external urls
+          <Image src={src} alt={alt || name || email || "avatar"} width={size} height={size} style={{ objectFit: "cover" }} />
+        ) : (
+          <span>{fallback}</span>
+        )}
+      </div>
+
+      {online && (
+        <span className="absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-900" />
       )}
     </div>
   );

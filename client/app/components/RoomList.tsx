@@ -3,11 +3,13 @@
 import { motion } from "framer-motion";
 import { Avatar } from "./Avatar";
 
+
 interface RoomListProps {
   rooms: any[];
   currentRoomId: number | null;
   onSelect: (id: number) => void;
-  currentUserId?: number | null; // new
+  currentUserId?: number | null;
+  onlineUsers?: Set<number>; // New prop
 }
 
 export function RoomList({
@@ -15,6 +17,7 @@ export function RoomList({
   currentRoomId,
   onSelect,
   currentUserId = null,
+  onlineUsers = new Set(), // default empty set
 }: RoomListProps) {
   return (
     <motion.div
@@ -35,6 +38,9 @@ export function RoomList({
             ? r.members.find((m: any) => m.user?.id !== currentUserId)?.user ?? null
             : null;
 
+        // Determine if online
+        const isOnline = otherMember ? onlineUsers.has(otherMember.id) : false;
+
         // Room label / fallback
         const label = isDm
           ? otherMember?.name || otherMember?.email?.split?.("@")?.[0] || "Direct"
@@ -49,10 +55,9 @@ export function RoomList({
             transition={{ duration: 0.1 }}
             className={`relative w-full rounded-xl text-sm font-medium
               flex flex-row items-center gap-3 px-3 py-2 text-left transition-colors
-              ${
-                active
-                  ? "bg-indigo-600 text-slate-50 shadow-sm"
-                  : "text-slate-300 hover:bg-slate-800"
+              ${active
+                ? "bg-indigo-600 text-slate-50 shadow-sm"
+                : "text-slate-300 hover:bg-slate-800"
               }
             `}
           >
@@ -64,6 +69,7 @@ export function RoomList({
                   name={otherMember.name}
                   email={otherMember.email}
                   size={36}
+                  online={isOnline}
                 />
               ) : (
                 <Avatar

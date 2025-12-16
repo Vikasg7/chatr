@@ -14,8 +14,8 @@ export type Client = {
 
 export class WSService {
   private wss: WebSocketServer;
-  private clients: Map<string, Client> = new Map();
-  private prisma: PrismaClient;
+  // Track connected user IDs
+  private onlineUsers: Set<number> = new Set();
 
   constructor(server: any, prisma: PrismaClient) {
     this.prisma = prisma;
@@ -35,22 +35,58 @@ export class WSService {
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-      this.clients.set(id, { id, socket, userId: decoded.userId });
-  
-      console.log("✅ WebSocket connected", id);
-  
+      const userId = decoded.userId;
+
+      this.clients.set(id, { id, socket, userId });
+
+      // Mark as online
+      this.onlineUsers.add(userId);
+      console.log(`✅ WebSocket connected: ${id} (User: ${userId})`);
+
+      // 1. Send current list to new user
+      socket.send(JSON.stringify({
+        type: "status:list",
+        users: Array.from(this.onlineUsers)
+      }));
+
+      // 2. Broadcast to others that this user is online
+      this.broadcast({
+        type: "status:online",
+        userId
+      });
+
       socket.on("message", this.handleMessage.bind(this, id));
-  
       socket.on("close", this.handleSocketClose.bind(this, id));
     } catch {
-      socket.send(JSON.stringify({"error": "Invalid token"}));
+      socket.send(JSON.stringify({ "error": "Invalid token" }));
       socket.close();
       console.warn("Invalid WebSocket token");
     }
   }
 
   private handleSocketClose(senderId: string) {
-    console.log("❌ WebSocket disconnected:", senderId);
+    const client = this.clients.get(senderId);
+    if (client && client.userId) {
+      console.log(`❌ WebSocket disconnected: ${senderId} (User: ${client.userId})`);
+
+      // Check if user has other connections (multi-tab)
+      // We iterate clients to see if any OTHER client has same userId
+      let hasOtherConnections = false;
+      for (const [cid, c] of this.clients.entries()) {
+        if (cid !== senderId && c.userId === client.userId) {
+          hasOtherConnections = true;
+          break;
+        }
+      }
+
+      if (!hasOtherConnections) {
+        this.onlineUsers.delete(client.userId);
+        this.broadcast({
+          type: "status:offline",
+          userId: client.userId
+        });
+      }
+    }
     this.clients.delete(senderId);
   }
 
@@ -58,7 +94,7 @@ export class WSService {
     try {
       const msg = JSON.parse(data.toString());
       const client = this.clients.get(senderId);
-      if (!client || !client.userId) 
+      if (!client || !client.userId)
         return;
 
       if (msg.type === "room:join") {
@@ -95,14 +131,16 @@ export class WSService {
   broadcast(payload: any) {
     const str = JSON.stringify(payload);
     for (const client of this.clients.values()) {
-      client.socket.send(str);
+      if (client.socket.readyState === WebSocket.OPEN) {
+        client.socket.send(str);
+      }
     }
   }
 
   broadcastToRoom(roomId: number, payload: any) {
     const data = JSON.stringify(payload);
     for (const client of this.clients.values()) {
-      if (client.roomId === roomId) {
+      if (client.roomId === roomId && client.socket.readyState === WebSocket.OPEN) {
         client.socket.send(data);
       }
     }
