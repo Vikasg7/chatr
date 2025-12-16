@@ -177,14 +177,11 @@ export function MessageList({ messages, currentUserId, onReact }: MessageListPro
                     </div>
                   </div>
                 </div>
-
-              </div>
               </motion.div>
-      );
+            );
           })}
-    </AnimatePresence>
-  )
-}
+        </AnimatePresence>
+      )}
     </div >
   );
 }
