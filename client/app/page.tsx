@@ -15,6 +15,7 @@ import { CreateRoomModal } from "./components/CreateRoomModal";
 import { StartDmModal } from "./components/StartDmModal";
 import { InviteUserModal } from "./components/InviteUserModal";
 import Onboarding from "./components/Onboarding";
+import { CallInterface } from "./components/CallInterface";
 import { motion } from 'framer-motion';
 
 interface Message {
@@ -47,6 +48,16 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
 
+  // WebRTC State
+  const [callState, setCallState] = useState<"idle" | "incoming" | "calling" | "connected">("idle");
+  const [callMeta, setCallMeta] = useState<{ caller?: { id: number; name: string }; target?: { id: number; name: string } }>({});
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const { token, user, hydrated, setUser, setToken } = useAuthStore();
 
@@ -224,6 +235,18 @@ export default function ChatPage() {
           return m;
         }));
       }
+
+      // WebRTC Signaling
+      else if (data.type === "call:invite") {
+        if (data.senderId === user?.id) return; // ignore self
+        setCallState("incoming");
+        setCallMeta({ caller: { id: data.senderId, name: "Incoming Call" } }); // You might want to fetch user name
+        // Auto-set remote desc for answer later
+        handleSignal(data);
+      } else if (["call:answer", "call:candidate", "call:reject", "call:end"].includes(data.type)) {
+        if (data.senderId === user?.id) return;
+        handleSignal(data);
+      }
     };
 
     ws.onclose = () => setConnected(false);
@@ -258,6 +281,151 @@ export default function ChatPage() {
     if (ids.length === 2) return "Two people are typing...";
     return "Several people are typing...";
   };
+
+  // --- WebRTC Logic ---
+
+  const ICE_SERVERS = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  };
+
+  async function startCall() {
+    if (!currentRoomId) return;
+    setCallState("calling");
+    setCallMeta({ target: { id: 0, name: "Room" } }); // Room call
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLocalStream(stream);
+      localStreamRef.current = stream;
+
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+      peerConnectionRef.current = pc;
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          wsRef.current?.send(JSON.stringify({ type: "call:candidate", candidate: event.candidate }));
+        }
+      };
+
+      pc.ontrack = (event) => {
+        setRemoteStream(event.streams[0]);
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      wsRef.current?.send(JSON.stringify({ type: "call:invite", sdp: offer }));
+    } catch (err) {
+      console.error("Failed to start call", err);
+      endCall();
+    }
+  }
+
+  async function acceptCall() {
+    // For incoming
+    setCallState("connected");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLocalStream(stream);
+      localStreamRef.current = stream;
+
+      const pc = peerConnectionRef.current || new RTCPeerConnection(ICE_SERVERS);
+      peerConnectionRef.current = pc;
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          wsRef.current?.send(JSON.stringify({ type: "call:candidate", candidate: event.candidate }));
+        }
+      };
+
+      pc.ontrack = (event) => {
+        setRemoteStream(event.streams[0]);
+      };
+
+      // We already setRemoteDescription in handleSignal for the invite, now create answer
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      wsRef.current?.send(JSON.stringify({ type: "call:answer", sdp: answer }));
+
+    } catch (err) {
+      console.error("Failed to accept", err);
+      endCall();
+    }
+  }
+
+  function endCall() {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
+    setLocalStream(null);
+    setRemoteStream(null);
+    setCallState("idle");
+    wsRef.current?.send(JSON.stringify({ type: "call:end" }));
+  }
+
+  async function handleSignal(data: any) {
+    if (data.type === "call:invite") {
+      // Initialize PC to be ready for answer
+      const pc = new RTCPeerConnection(ICE_SERVERS);
+      peerConnectionRef.current = pc;
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          wsRef.current?.send(JSON.stringify({ type: "call:candidate", candidate: event.candidate }));
+        }
+      };
+      pc.ontrack = (event) => {
+        setRemoteStream(event.streams[0]);
+      };
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+
+    } else if (data.type === "call:answer") {
+      if (peerConnectionRef.current) {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        setCallState("connected");
+      }
+    } else if (data.type === "call:candidate") {
+      if (peerConnectionRef.current) {
+        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    } else if (data.type === "call:end" || data.type === "call:reject") {
+      // Force cleanup without sending end event
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(t => t.stop());
+        localStreamRef.current = null;
+      }
+      setLocalStream(null);
+      setRemoteStream(null);
+      setCallState("idle");
+    }
+  }
+
+  function toggleMute() {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach(t => t.enabled = !t.enabled);
+      setIsMuted(!localStreamRef.current.getAudioTracks()[0].enabled);
+    }
+  }
+
+  function toggleVideo() {
+    if (localStreamRef.current) {
+      localStreamRef.current.getVideoTracks().forEach(t => t.enabled = !t.enabled);
+      setIsVideoOff(!localStreamRef.current.getVideoTracks()[0].enabled);
+    }
+  }
 
   async function submitLogin(creds?: { email: string; password: string }) {
     if (formLoading) return;

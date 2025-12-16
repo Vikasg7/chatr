@@ -187,6 +187,17 @@ export class WSService {
           reactions
         });
       }
+
+      // --- WebRTC Signaling ---
+      else if (["call:invite", "call:answer", "call:candidate", "call:reject", "call:end"].includes(msg.type)) {
+        if (!client.roomId) return;
+
+        // For simplicity in room-based chat, we broadcast to the room (excluding sender).
+        this.broadcastToRoom(client.roomId, {
+          ...msg,
+          senderId: client.userId
+        }, client.id);
+      }
     } catch (err) {
       console.error("WS error:", err);
     }
