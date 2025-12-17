@@ -2,6 +2,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import { fetchMetadata } from './lib/metadata';
 
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
@@ -103,9 +104,6 @@ export class WSService {
         client.roomId = msg.roomId;
         return;
       }
-
-      import { fetchMetadata } from './lib/metadata';
-
       // ... (inside class, handleMessage method)
 
       if (msg.type === "message:new") {

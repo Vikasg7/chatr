@@ -17,9 +17,9 @@ export default (prisma: PrismaClient) => {
       data: {
         name,
         isPrivate: true,
-        ownerId: req.user!.id,
+        ownerId: req.userId!,
         members: {
-          create: { userId: req.user!.id }
+          create: { userId: req.userId! }
         }
       },
     });
@@ -29,7 +29,7 @@ export default (prisma: PrismaClient) => {
 
   // LIST ROOMS (Only ones I am a member of)
   router.get("/", requireAuth, async (req: AuthRequest, res) => {
-    const userId = req.user!.id;
+    const userId = req.userId!;
     // We want rooms where type=GROUP AND (isPrivate=false OR members includes me)
     // But per requirement, ALL rooms are private now. 
     // effectively: members includes me OR type=DM
@@ -59,7 +59,7 @@ export default (prisma: PrismaClient) => {
   router.post("/:roomId/invite", requireAuth, async (req: AuthRequest, res) => {
     const roomId = parseInt(req.params.roomId);
     const { email } = req.body;
-    const userId = req.user!.id;
+    const userId = req.userId!;
 
     if (!email) return res.status(400).json({ error: "Email required" });
 
@@ -93,7 +93,7 @@ export default (prisma: PrismaClient) => {
   // GET MESSAGES FOR ROOM
   router.get("/:roomId/messages", requireAuth, async (req: AuthRequest, res) => {
     const roomId = parseInt(req.params.roomId);
-    const userId = req.user!.id;
+    const userId = req.userId!;
 
     // Security: Check membership
     const membership = await prisma.roomMember.findFirst({

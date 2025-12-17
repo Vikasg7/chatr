@@ -8,57 +8,58 @@ datasource db {
 }
 
 model User {
-  id        Int           @id @default(autoincrement())
-  email     String        @unique
-  password  String
-  name      String?
-  avatarUrl String?
-  onboardingSeen Boolean   @default(false)
-  createdAt DateTime      @default(now())
-  messages  Message[]
-  rooms     RoomMember[]
-  ownedRooms Room[] @relation("RoomOwner")
+  id             Int          @id @default(autoincrement())
+  email          String       @unique
+  password       String
+  name           String?
+  avatarUrl      String?
+  onboardingSeen Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  messages       Message[]
+  rooms          RoomMember[]
+  ownedRooms     Room[]       @relation("RoomOwner")
+  reactions      Reaction[]
 }
 
 model Room {
-  id        Int           @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String?
-  type      RoomType      @default(GROUP)
-  isPrivate Boolean       @default(true)
-  createdAt DateTime      @default(now())
+  type      RoomType @default(GROUP)
+  isPrivate Boolean  @default(true)
+  createdAt DateTime @default(now())
 
-  ownerId   Int?
-  owner     User?         @relation("RoomOwner", fields: [ownerId], references: [id])
+  ownerId Int?
+  owner   User? @relation("RoomOwner", fields: [ownerId], references: [id])
 
-  messages  Message[]
-  members   RoomMember[]
+  messages Message[]
+  members  RoomMember[]
 }
 
 model RoomMember {
-  id      Int   @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId  Int
-  user    User  @relation(fields: [userId], references: [id])
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
 
-  roomId  Int
-  room    Room  @relation(fields: [roomId], references: [id])
+  roomId Int
+  room   Room @relation(fields: [roomId], references: [id])
 
   @@unique([userId, roomId])
 }
 
 model Message {
-  id        Int       @id @default(autoincrement())
-  text      String?   // Make text optional if sending only image
+  id             Int      @id @default(autoincrement())
+  text           String? // Make text optional if sending only image
   attachmentUrl  String?
   attachmentType String? // IMAGE, FILE
-  metadata       Json?   // Link preview data { title, description, image, url }
-  createdAt DateTime  @default(now())
+  metadata       Json? // Link preview data { title, description, image, url }
+  createdAt      DateTime @default(now())
 
-  sender    User      @relation(fields: [senderId], references: [id])
-  senderId  Int
+  sender   User @relation(fields: [senderId], references: [id])
+  senderId Int
 
-  room      Room      @relation(fields: [roomId], references: [id])
-  roomId    Int
+  room   Room @relation(fields: [roomId], references: [id])
+  roomId Int
 
   reactions Reaction[]
 }
@@ -68,11 +69,11 @@ model Reaction {
   emoji     String
   createdAt DateTime @default(now())
 
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
 
   messageId Int
-  message   Message  @relation(fields: [messageId], references: [id])
+  message   Message @relation(fields: [messageId], references: [id])
 
   @@unique([userId, messageId, emoji])
 }
