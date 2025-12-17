@@ -149,6 +149,40 @@ export class WSService {
           userId: client.userId,
           roomId: client.roomId // useful context
         }, client.id); // exclude sender
+      } else if (msg.type === "message:edit") {
+        if (!client.roomId || !msg.messageId || !msg.text) return;
+
+        const message = await this.prisma.message.findUnique({ where: { id: msg.messageId } });
+        if (!message || message.senderId !== client.userId) return; // Ownership check
+
+        const updated = await this.prisma.message.update({
+          where: { id: msg.messageId },
+          data: { text: msg.text },
+          include: { sender: true, reactions: { include: { user: { select: { id: true, name: true } } } } }
+        });
+
+        this.broadcastToRoom(client.roomId, {
+          type: "message:edit",
+          message: updated
+        });
+
+      } else if (msg.type === "message:delete") {
+        if (!client.roomId || !msg.messageId) return;
+
+        const message = await this.prisma.message.findUnique({ where: { id: msg.messageId } });
+        if (!message || message.senderId !== client.userId) return;
+
+        // Delete interactions first if not using cascade? Prisma usually handles cascade if configured, 
+        // but Reaction relation might strictly need manual deletion if constraints aren't set to CASCADE.
+        // Let's assume schema handles it or do it safely:
+        await this.prisma.reaction.deleteMany({ where: { messageId: msg.messageId } });
+        await this.prisma.message.delete({ where: { id: msg.messageId } });
+
+        this.broadcastToRoom(client.roomId, {
+          type: "message:delete",
+          messageId: msg.messageId
+        });
+
       } else if (msg.type === "message:react") {
         if (!client.roomId || !msg.messageId || !msg.emoji) return;
 

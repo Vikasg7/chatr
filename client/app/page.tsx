@@ -53,10 +53,21 @@ export default function ChatPage() {
 
   // Input State
   const [input, setInput] = useState("");
+  const [editingMessage, setEditingMessage] = useState<any>(null);
 
   const sendMsg = (attachment?: { url: string; type: string }) => {
-    chat.sendMsg(input, attachment);
+    if (editingMessage) {
+      chat.editMsg(editingMessage.id, input);
+      setEditingMessage(null);
+    } else {
+      chat.sendMsg(input, attachment);
+    }
     setInput("");
+  };
+
+  const startEdit = (msg: any) => {
+    setEditingMessage(msg);
+    setInput(msg.text);
   };
 
   // Layout State
@@ -169,6 +180,8 @@ export default function ChatPage() {
               messages={chat.messages}
               currentUserId={user?.id || null}
               onReact={chat.sendReaction}
+              onEdit={startEdit}
+              onDelete={chat.deleteMsg}
             />
 
             <MsgInput
@@ -177,6 +190,8 @@ export default function ChatPage() {
               onSend={sendMsg}
               onTyping={chat.handleTyping}
               disabled={!chat.connected || !currentRoom}
+              isEditing={!!editingMessage}
+              onCancelEdit={() => { setEditingMessage(null); setInput(""); }}
             />
           </section>
         </div>

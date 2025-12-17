@@ -10,9 +10,11 @@ interface MessageListProps {
   messages: any[];
   currentUserId: number | null;
   onReact?: (msgId: number, emoji: string) => void;
+  onEdit?: (msg: any) => void;
+  onDelete?: (msgId: number) => void;
 }
 
-export function MessageList({ messages, currentUserId, onReact }: MessageListProps) {
+export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const userId = currentUserId;
 
@@ -48,7 +50,6 @@ export function MessageList({ messages, currentUserId, onReact }: MessageListPro
 
             const firstInGroup = !prevSame;
 
-            return (
             return (
               <motion.div
                 key={m.id}
@@ -135,8 +136,11 @@ export function MessageList({ messages, currentUserId, onReact }: MessageListPro
 
                     {/* Timestamp for self (since we hide header) */}
                     {mine && firstInGroup && (
-                      <div className="absolute bottom-1 right-2 translate-y-full pt-1 text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {format.time(m.createdAt)}
+                      <div className="absolute bottom-1 right-2 translate-y-full pt-1 text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                        <span>{format.time(m.createdAt)}</span>
+                        {/* Edit/Delete Actions */}
+                        <button className="hover:text-slate-300" onClick={() => onEdit?.(m)}>Edit</button>
+                        <button className="hover:text-red-400" onClick={() => onDelete?.(m.id)}>Delete</button>
                       </div>
                     )}
                   </div>

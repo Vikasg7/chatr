@@ -85,6 +85,12 @@ export function useChat(token: string | null, user: any) {
             else if (data.type === "message:react") {
                 setMessages(prev => prev.map(m => m.id === data.messageId ? { ...m, reactions: data.reactions } : m));
             }
+            else if (data.type === "message:edit") {
+                setMessages(prev => prev.map(m => m.id === data.message.id ? data.message : m));
+            }
+            else if (data.type === "message:delete") {
+                setMessages(prev => prev.filter(m => m.id !== data.messageId));
+            }
             else if (data.type.startsWith("call:")) {
                 if (signalHandlerRef.current) signalHandlerRef.current(data);
             }
@@ -157,6 +163,16 @@ export function useChat(token: string | null, user: any) {
         wsRef.current.send(JSON.stringify({ type: "message:react", messageId: msgId, emoji }));
     }, []);
 
+    const editMsg = useCallback((msgId: number, text: string) => {
+        if (!wsRef.current) return;
+        wsRef.current.send(JSON.stringify({ type: "message:edit", messageId: msgId, text }));
+    }, []);
+
+    const deleteMsg = useCallback((msgId: number) => {
+        if (!wsRef.current) return;
+        wsRef.current.send(JSON.stringify({ type: "message:delete", messageId: msgId }));
+    }, []);
+
     const handleTyping = useCallback((isTyping: boolean) => {
         const ws = wsRef.current;
         if (!ws) return;
@@ -190,6 +206,8 @@ export function useChat(token: string | null, user: any) {
         inviteUser,
         sendMsg,
         sendReaction,
+        editMsg,
+        deleteMsg,
         handleTyping,
         setSignalHandler
     };

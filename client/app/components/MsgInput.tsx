@@ -12,9 +12,11 @@ interface MsgInputProps {
   onSend: (attachment?: { url: string; type: string }) => void; // Updated signature
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
+  isEditing?: boolean;
+  onCancelEdit?: () => void;
 }
 
-export function MsgInput({ value, onChange, onSend, onTyping, disabled, }: MsgInputProps) {
+export function MsgInput({ value, onChange, onSend, onTyping, disabled, isEditing, onCancelEdit }: MsgInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -77,12 +79,15 @@ export function MsgInput({ value, onChange, onSend, onTyping, disabled, }: MsgIn
         </div>
         <button
           onClick={() => onSend()}
-          className="btn-primary"
+          className={`btn-primary ${isEditing ? 'bg-emerald-600 hover:bg-emerald-500' : ''}`}
           disabled={disabled || !value.trim()}
           aria-disabled={disabled || !value.trim()}
         >
-          Send
+          {isEditing ? "Update" : "Send"}
         </button>
+        {isEditing && (
+          <button onClick={onCancelEdit} className="text-slate-400 hover:text-white px-2 text-sm">Cancel</button>
+        )}
       </div>
     </div>
   );
