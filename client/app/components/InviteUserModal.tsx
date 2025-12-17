@@ -16,9 +16,10 @@ interface InviteUserModalProps {
     open: boolean;
     onClose: () => void;
     onInvite: (email: string) => void;
+    excludeIds?: number[];
 }
 
-export function InviteUserModal({ open, onClose, onInvite }: InviteUserModalProps) {
+export function InviteUserModal({ open, onClose, onInvite, excludeIds = [] }: InviteUserModalProps) {
     const [query, setQuery] = useState("");
     const [users, setUsers] = useState<User[]>([]);
     const currentUserId = useAuthStore(s => s.user?.id);
@@ -54,8 +55,8 @@ export function InviteUserModal({ open, onClose, onInvite }: InviteUserModalProp
         onClose();
     }
 
-    // Filter out self
-    const filtered = users.filter((u) => u.id !== currentUserId);
+    // Filter out self and already members
+    const filtered = users.filter((u) => u.id !== currentUserId && !excludeIds.includes(u.id));
 
     if (!open) return null;
 

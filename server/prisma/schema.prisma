@@ -8,58 +8,50 @@ datasource db {
 }
 
 model User {
-  id             Int          @id @default(autoincrement())
-  email          String       @unique
-  password       String
-  name           String?
-  avatarUrl      String?
-  onboardingSeen Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  messages       Message[]
-  rooms          RoomMember[]
-  ownedRooms     Room[]       @relation("RoomOwner")
-  reactions      Reaction[]
+  id              Int          @id @default(autoincrement())
+  email           String       @unique
+  password        String
+  name            String?
+  avatarUrl       String?
+  onboardingSeen  Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  messages        Message[]
+  reactions       Reaction[]
+
+  sentRequests    Friend[]     @relation("SentRequests")
+  receivedRequests Friend[]    @relation("ReceivedRequests")
 }
 
-model Room {
+model Friend {
   id        Int      @id @default(autoincrement())
-  name      String?
-  type      RoomType @default(GROUP)
-  isPrivate Boolean  @default(true)
+  status    String   @default("PENDING") // PENDING, ACCEPTED
   createdAt DateTime @default(now())
 
-  ownerId Int?
-  owner   User? @relation("RoomOwner", fields: [ownerId], references: [id])
+  senderId  Int
+  sender    User     @relation("SentRequests", fields: [senderId], references: [id])
 
-  messages Message[]
-  members  RoomMember[]
-}
+  receiverId Int
+  receiver  User     @relation("ReceivedRequests", fields: [receiverId], references: [id])
 
-model RoomMember {
-  id Int @id @default(autoincrement())
+  messages  Message[]
 
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
-
-  roomId Int
-  room   Room @relation(fields: [roomId], references: [id])
-
-  @@unique([userId, roomId])
+  @@unique([senderId, receiverId])
 }
 
 model Message {
   id             Int      @id @default(autoincrement())
-  text           String? // Make text optional if sending only image
+  text           String?
   attachmentUrl  String?
   attachmentType String? // IMAGE, FILE
-  metadata       Json? // Link preview data { title, description, image, url }
+  metadata       Json? // Link preview data
   createdAt      DateTime @default(now())
 
   sender   User @relation(fields: [senderId], references: [id])
   senderId Int
 
-  room   Room @relation(fields: [roomId], references: [id])
-  roomId Int
+  friendId Int
+  friend   Friend @relation(fields: [friendId], references: [id], onDelete: Cascade)
 
   reactions Reaction[]
 }
@@ -76,9 +68,4 @@ model Reaction {
   message   Message @relation(fields: [messageId], references: [id])
 
   @@unique([userId, messageId, emoji])
-}
-
-enum RoomType {
-  GROUP
-  DM
 }

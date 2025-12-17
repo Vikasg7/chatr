@@ -6,12 +6,15 @@ export const metadata: Metadata = {
   title: "Chatr",
   description: "A simple chat application",
   manifest: "/manifest.json",
-  themeColor: "#020617",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Chatr",
   },
+};
+
+export const viewport = {
+  themeColor: "#020617",
 };
 
 export default function RootLayout({

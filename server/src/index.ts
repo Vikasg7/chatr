@@ -2,8 +2,7 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import authRouter from "./routes/auth";
-import roomRouter from "./routes/rooms";
-import dmRouter from "./routes/dm";
+import friendsRouter from "./routes/friends";
 import usersRouter from "./routes/users";
 import uploadRouter from "./routes/uploads";
 import { WSService } from "./ws";
@@ -22,16 +21,15 @@ app.use("/uploads", express.static(path.join(__dirname, "../../public/uploads"))
 // simple health
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-// auth routes
-app.use("/api/auth", authRouter(prisma));
-app.use("/api/rooms", roomRouter(prisma));
-app.use("/api/dm", dmRouter(prisma));
-app.use("/api/users", usersRouter(prisma));
-app.use("/api/upload", uploadRouter);
-
 const server = http.createServer(app);
 // ✅ Initialize WebSocket service
-new WSService(server, prisma);
+const wsService = new WSService(server, prisma);
+
+// routes
+app.use("/api/auth", authRouter(prisma));
+app.use("/api/friends", friendsRouter(prisma, wsService));
+app.use("/api/users", usersRouter(prisma));
+app.use("/api/upload", uploadRouter);
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {

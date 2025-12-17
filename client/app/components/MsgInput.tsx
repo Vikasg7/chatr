@@ -1,7 +1,4 @@
 "use client";
-
-
-
 import { useRef } from "react";
 import * as api from "@/lib/api";
 import toastLib from "@/lib/toast";
@@ -9,15 +6,64 @@ import toastLib from "@/lib/toast";
 interface MsgInputProps {
   value: string;
   onChange: (val: string) => void;
-  onSend: (attachment?: { url: string; type: string }) => void; // Updated signature
+  onSend: (attachment?: { url: string; type: string }) => void;
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
   isEditing?: boolean;
   onCancelEdit?: () => void;
+  // New props for gating
+  friendshipStatus?: string;
+  isSender?: boolean;
+  onSendRequest?: () => void;
+  onAcceptRequest?: () => void;
 }
 
-export function MsgInput({ value, onChange, onSend, onTyping, disabled, isEditing, onCancelEdit }: MsgInputProps) {
+export function MsgInput({
+  value,
+  onChange,
+  onSend,
+  onTyping,
+  disabled,
+  isEditing,
+  onCancelEdit,
+  friendshipStatus,
+  isSender,
+  onSendRequest,
+  onAcceptRequest
+}: MsgInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (friendshipStatus !== "ACCEPTED") {
+    return (
+      <div className="px-4 py-8 border-t border-slate-800 bg-slate-950/90 text-center">
+        {friendshipStatus === "PENDING" ? (
+          <div>
+            <p className="text-slate-400 text-sm mb-4">
+              {isSender ? "Friend request sent. Waiting for response..." : "This user wants to be friends!"}
+            </p>
+            {!isSender && (
+              <button
+                onClick={onAcceptRequest}
+                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition"
+              >
+                Accept Friend Request
+              </button>
+            )}
+          </div>
+        ) : (
+          <div>
+            <p className="text-slate-400 text-sm mb-4">You are not friends with this user yet.</p>
+            <button
+              onClick={onSendRequest}
+              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition"
+            >
+              Send Friend Request?
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
@@ -29,15 +75,9 @@ export function MsgInput({ value, onChange, onSend, onTyping, disabled, isEditin
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // reset input
     e.target.value = "";
-
     try {
       const res = await api.uploadFile(file);
-      // Immediately send message with attachment
-      // Alternatively, we could show a preview and let user type text with it.
-      // For simplicity v1: Send immediately as separate message
       onSend(res);
     } catch (err: any) {
       toastLib.showToast("Upload failed", "error");

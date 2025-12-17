@@ -49,7 +49,8 @@ export default (prisma: PrismaClient) => {
       },
       orderBy: { id: "asc" },
       include: {
-        owner: { select: { id: true, name: true, email: true } } // useful for UI
+        owner: { select: { id: true, name: true, email: true } },
+        members: { select: { userId: true } }
       }
     });
     res.json(rooms);
@@ -75,19 +76,53 @@ export default (prisma: PrismaClient) => {
     const target = await prisma.user.findUnique({ where: { email } });
     if (!target) return res.status(404).json({ error: "User not found" });
 
-    // 3. Add to members (ignore if already there)
-    try {
-      await prisma.roomMember.create({
+    // 3. Create Invite
+    const invite = await prisma.roomInvite.create({
+      data: {
+        roomId,
+        inviterId: userId,
+        inviteeId: target.id,
+        status: "PENDING"
+      }
+    });
+
+    // 4. Send DM with invite
+    // Find or create DM room
+    let dmRoom = await prisma.room.findFirst({
+      where: {
+        type: "DM",
+        members: { some: { userId } },
+        AND: { members: { some: { userId: target.id } } }
+      }
+    });
+
+    if (!dmRoom) {
+      dmRoom = await prisma.room.create({
         data: {
-          roomId,
-          userId: target.id
+          type: "DM",
+          members: {
+            create: [{ userId }, { userId: target.id }]
+          }
         }
       });
-    } catch (e) {
-      // ignore unique constraint
     }
 
-    res.json({ success: true });
+    // Send the message
+    await prisma.message.create({
+      data: {
+        roomId: dmRoom.id,
+        senderId: userId,
+        text: `Invited you to join ${room.name || "a group"}`,
+        metadata: {
+          type: "INVITE",
+          inviteId: invite.id,
+          roomName: room.name,
+          roomId: room.id
+        }
+      }
+    });
+
+    res.json({ success: true, message: "Invite sent via DM" });
   });
 
   // GET MESSAGES FOR ROOM

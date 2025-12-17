@@ -28,7 +28,7 @@ async function request(method: string, path: string, body?: any) {
   if (!res.ok) {
     let errBody: any = null;
     try {
-      errBody = await res.json();
+      errBody = await res.clone().json();
     } catch (e) {
       errBody = await res.text();
     }
@@ -50,6 +50,10 @@ export async function get(path: string) {
 
 export async function post(path: string, body: any) {
   return request("POST", path, body);
+}
+
+export async function del(path: string) {
+  return request("DELETE", path);
 }
 
 export async function uploadFile(file: File) {

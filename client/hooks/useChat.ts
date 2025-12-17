@@ -16,9 +16,9 @@ interface Message {
 
 export function useChat(token: string | null, user: any) {
     const [connected, setConnected] = useState(false);
-    const [rooms, setRooms] = useState<any[]>([]);
-    const [dmRooms, setDmRooms] = useState<any[]>([]);
-    const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
+    const [friends, setFriends] = useState<any[]>([]);
+    const [currentFriendId, setCurrentFriendId] = useState<number | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
     const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
@@ -26,28 +26,62 @@ export function useChat(token: string | null, user: any) {
     const wsRef = useRef<WebSocket | null>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const signalHandlerRef = useRef<((data: any) => void) | null>(null);
+    const friendsRef = useRef<any[]>([]);
+
+    useEffect(() => {
+        friendsRef.current = friends;
+    }, [friends]);
 
     const setSignalHandler = useCallback((handler: (data: any) => void) => {
         signalHandlerRef.current = handler;
     }, []);
+
+    // Actions
+    const addMsg = useCallback((msg: Message) => {
+        setMessages(prev => [...prev, msg].sort((a, b) => a.id - b.id));
+    }, []);
+
+    const selectFriend = useCallback(async (friendshipId: number) => {
+        const friendship = friendsRef.current.find(f => f.id === friendshipId);
+        if (friendship) {
+            const otherUser = friendship.senderId === user?.id ? friendship.receiver : friendship.sender;
+            setSelectedUserId(otherUser?.id || null);
+        }
+        setCurrentFriendId(friendshipId);
+        wsRef.current?.send(JSON.stringify({ type: "chat:join", friendId: friendshipId }));
+        const msgs = await api.get(`/friends/${friendshipId}/messages`);
+        setMessages((msgs || []).sort((a: any, b: any) => a.id - b.id));
+    }, [user?.id]);
 
     // Initial Data Load
     useEffect(() => {
         if (!token) return;
         (async () => {
             try {
-                const [r, d] = await Promise.all([
-                    api.get("/rooms"),
-                    api.get("/dm")
-                ]);
-                setRooms(r);
-                setDmRooms(d);
-                if (r.length > 0 && !currentRoomId) {
-                    joinRoom(r[0].id);
+                const f = await api.get("/friends");
+                setFriends(f);
+
+                // One-time auto-select on mount
+                const firstAccepted = f.find((fr: any) => fr.status === "ACCEPTED");
+                if (firstAccepted && !currentFriendId) {
+                    selectFriend(firstAccepted.id);
                 }
             } catch (e) { console.error(e); }
         })();
     }, [token]);
+
+    // Auto-sync WebSocket session when a friendship is found for the selected user
+    useEffect(() => {
+        if (!selectedUserId) return;
+        const matchingFriendship = friends.find(f =>
+            (f.senderId === selectedUserId || f.receiverId === selectedUserId) &&
+            f.status === "ACCEPTED"
+        );
+
+        if (matchingFriendship && matchingFriendship.id !== currentFriendId) {
+            selectFriend(matchingFriendship.id);
+        }
+    }, [friends, selectedUserId, currentFriendId, selectFriend]);
 
     // WebSocket Setup
     useEffect(() => {
@@ -59,7 +93,9 @@ export function useChat(token: string | null, user: any) {
 
         ws.onopen = () => {
             setConnected(true);
-            if (Notification.permission === "default") Notification.requestPermission();
+            if (currentFriendId) {
+                ws.send(JSON.stringify({ type: "chat:join", friendId: currentFriendId }));
+            }
         };
 
         ws.onmessage = (event) => {
@@ -67,13 +103,6 @@ export function useChat(token: string | null, user: any) {
 
             if (data.type === "message:new") {
                 addMsg(data.message);
-                if (document.hidden && data.message.sender.id !== user?.id) {
-                    const n = new Notification(`New message from ${data.message.sender.name || data.message.sender.email}`, {
-                        body: data.message.text || "Sent an attachment",
-                        icon: "/icon.svg"
-                    });
-                    n.onclick = () => window.focus();
-                }
             }
             else if (data.type === "status:list") setOnlineUsers(new Set(data.users));
             else if (data.type === "status:online") setOnlineUsers(prev => new Set(prev).add(data.userId));
@@ -90,6 +119,30 @@ export function useChat(token: string | null, user: any) {
             }
             else if (data.type === "message:delete") {
                 setMessages(prev => prev.filter(m => m.id !== data.messageId));
+            }
+            else if (data.type === "friend:new") {
+                setFriends(prev => {
+                    if (prev.find(f => f.id === data.friend.id)) return prev;
+                    return [...prev, data.friend];
+                });
+                toastLib.showToast("New friend request!", "info");
+            }
+            else if (data.type === "friend:updated") {
+                setFriends(prev => prev.map(f => f.id === data.friend.id ? data.friend : f));
+                if (data.friend.status === "ACCEPTED") {
+                    toastLib.showToast("Friend request accepted!", "success");
+                }
+            }
+            else if (data.type === "friend:deleted") {
+                setFriends(prev => prev.filter(f => f.id !== data.friendId));
+                if (currentFriendId === data.friendId) {
+                    // Stay on the conversation but as non-friend
+                    const otherId = data.senderId === user?.id ? data.receiverId : data.senderId;
+                    setSelectedUserId(otherId);
+                    setCurrentFriendId(null);
+                    setMessages([]);
+                }
+                toastLib.showToast("Friendship removed", "info");
             }
             else if (data.type.startsWith("call:")) {
                 if (signalHandlerRef.current) signalHandlerRef.current(data);
@@ -111,42 +164,61 @@ export function useChat(token: string | null, user: any) {
         return () => {
             ws.close();
         };
-    }, [token, user]);
+    }, [token, user?.id]);
 
 
-    // Actions
-    const addMsg = useCallback((msg: Message) => {
-        setMessages(prev => [...prev, msg].sort((a, b) => a.id - b.id));
-    }, []);
 
-    const joinRoom = useCallback(async (roomId: number) => {
-        setCurrentRoomId(roomId);
-        wsRef.current?.send(JSON.stringify({ type: "room:join", roomId }));
-        const msgs = await api.get(`/rooms/${roomId}/messages`);
-        setMessages((msgs || []).sort((a: any, b: any) => a.id - b.id));
-    }, []);
+    const selectUser = useCallback(async (userId: number) => {
+        // Check if we already have a friendship with this user
+        const existing = friends.find(f => f.senderId === userId || f.receiverId === userId);
+        if (existing) {
+            selectFriend(existing.id);
+        } else {
+            setSelectedUserId(userId);
+            setCurrentFriendId(null);
+            setMessages([]);
+        }
+    }, [friends, selectFriend]);
 
-    const createRoom = useCallback(async (name: string) => {
-        const room = await api.post("/rooms", { name });
-        setRooms(prev => [...prev, room]);
-        joinRoom(room.id);
-    }, [joinRoom]);
-
-    const startDm = useCallback(async (targetUser: any) => {
-        const room = await api.post(`/dm/${targetUser.id}`, { name: targetUser?.name });
-        setDmRooms(prev => prev.find(r => r.id === room.id) ? prev : [...prev, room]);
-        joinRoom(room.id);
-    }, [joinRoom]);
-
-    const inviteUser = useCallback(async (email: string) => {
-        if (!currentRoomId) return;
+    const sendFriendRequest = useCallback(async (targetUserId: number) => {
         try {
-            await api.post(`/rooms/${currentRoomId}/invite`, { email });
-            toastLib.showToast("User invited!", "success");
+            const res = await api.post("/friends/request", { userId: targetUserId });
+            setFriends(prev => {
+                if (prev.find(f => f.id === res.id)) return prev;
+                return [...prev, res];
+            });
+            selectFriend(res.id);
+            toastLib.showToast("Friend request sent!", "success");
         } catch (e: any) {
             toastLib.showToast(e.message, "error");
         }
-    }, [currentRoomId]);
+    }, [selectFriend]);
+
+    const acceptFriendRequest = useCallback(async (friendshipId: number) => {
+        try {
+            await api.post(`/friends/accept/${friendshipId}`, {});
+            setFriends(prev => prev.map(f => f.id === friendshipId ? { ...f, status: "ACCEPTED" } : f));
+            toastLib.showToast("Request accepted!", "success");
+        } catch (e: any) {
+            toastLib.showToast(e.message, "error");
+        }
+    }, []);
+
+    const unfriend = useCallback(async (friendshipId: number) => {
+        try {
+            await api.del(`/friends/${friendshipId}`);
+            setFriends(prev => prev.filter(f => f.id !== friendshipId));
+            if (currentFriendId === friendshipId) {
+                // Keep the same user selected, but now as "not a friend"
+                // selectedUserId is already set in selectFriend
+                setCurrentFriendId(null);
+                setMessages([]);
+            }
+            toastLib.showToast("Friendship removed", "success");
+        } catch (e: any) {
+            toastLib.showToast(e.message, "error");
+        }
+    }, [currentFriendId]);
 
     const sendMsg = useCallback((text: string, attachment?: { url: string; type: string }) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
@@ -193,17 +265,18 @@ export function useChat(token: string | null, user: any) {
 
     return {
         connected,
-        rooms,
-        dmRooms,
-        currentRoomId,
+        friends,
+        currentFriendId,
         messages,
         onlineUsers,
         typingUsers,
+        selectedUserId,
         wsRef,
-        joinRoom,
-        createRoom,
-        startDm,
-        inviteUser,
+        selectFriend,
+        selectUser,
+        sendFriendRequest,
+        acceptFriendRequest,
+        unfriend,
         sendMsg,
         sendReaction,
         editMsg,

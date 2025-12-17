@@ -5,11 +5,13 @@ interface ChatHeaderProps {
   roomName: string;
   subtitle?: string;
   onInvite?: () => void;
+  onUnfriend?: () => void;
+  isAccepted?: boolean;
   typingText?: string | null;
   onCall?: () => void;
 }
 
-export function ChatHeader({ connected, roomName, subtitle, onInvite, typingText, onCall }: ChatHeaderProps) {
+export function ChatHeader({ connected, roomName, subtitle, onInvite, onUnfriend, isAccepted, typingText, onCall }: ChatHeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80">
       <div>
@@ -35,6 +37,20 @@ export function ChatHeader({ connected, roomName, subtitle, onInvite, typingText
             title="Start Video Call"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+          </button>
+        )}
+
+        {onUnfriend && isAccepted && (
+          <button
+            onClick={() => {
+              if (confirm("Are you sure you want to unfriend this user?")) {
+                onUnfriend();
+              }
+            }}
+            className="text-red-400 hover:text-red-300 font-medium transition-colors ml-2 text-xs"
+            title="Unfriend"
+          >
+            Unfriend
           </button>
         )}
 

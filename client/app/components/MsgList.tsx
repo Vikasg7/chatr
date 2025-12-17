@@ -12,9 +12,10 @@ interface MessageListProps {
   onReact?: (msgId: number, emoji: string) => void;
   onEdit?: (msg: any) => void;
   onDelete?: (msgId: number) => void;
+  onAcceptInvite?: (inviteId: number) => void;
 }
 
-export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete }: MessageListProps) {
+export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete, onAcceptInvite }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const userId = currentUserId;
 
@@ -27,7 +28,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto content-pad space-y-0 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 scroll-thin"
+      className="flex-1 overflow-y-auto overflow-x-hidden content-pad space-y-0 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 scroll-thin min-w-0"
     >
       {messages.length === 0 ? (
         <div className="h-full flex items-center justify-center text-sm text-slate-500">
@@ -147,11 +148,11 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
 
                   {/* Reactions */}
                   <div className="mt-1 flex items-center justify-end gap-1 flex-wrap pl-1">
-                    {Object.entries((m.reactions || []).reduce((acc: any, r: any) => {
+                    {(Object.entries((m.reactions || []).reduce((acc: any, r: any) => {
                       acc[r.emoji] = acc[r.emoji] || [];
                       acc[r.emoji].push(r);
                       return acc;
-                    }, {})).map(([emoji, reactions]: [string, any[]]) => {
+                    }, {})) as [string, any[]][]).map(([emoji, reactions]) => {
                       const hasReacted = reactions.some(r => r.user.id === userId);
                       return (
                         <button

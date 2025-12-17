@@ -10,7 +10,7 @@ export type Client = {
   id: string;
   socket: WebSocket;
   userId?: number;
-  roomId?: number;
+  friendId?: number; // Linked to the active friendship chat
 };
 
 export class WSService {
@@ -29,51 +29,37 @@ export class WSService {
   private handleConnection(socket: WebSocket, req: any) {
     const id = crypto.randomUUID();
 
-    // ✅ Extract token from query params (ws://host?token=xyz)
     const url = new URL(req.url ?? "", `http://${req.headers.host}`);
     const token = url.searchParams.get("token");
 
-    if (!token)
-      return;
+    if (!token) return;
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
       const userId = decoded.userId;
 
       this.clients.set(id, { id, socket, userId });
-
-      // Mark as online
       this.onlineUsers.add(userId);
       console.log(`✅ WebSocket connected: ${id} (User: ${userId})`);
 
-      // 1. Send current list to new user
       socket.send(JSON.stringify({
         type: "status:list",
         users: Array.from(this.onlineUsers)
       }));
 
-      // 2. Broadcast to others that this user is online
-      this.broadcast({
-        type: "status:online",
-        userId
-      });
+      this.broadcast({ type: "status:online", userId });
 
       socket.on("message", this.handleMessage.bind(this, id));
       socket.on("close", this.handleSocketClose.bind(this, id));
     } catch {
       socket.send(JSON.stringify({ "error": "Invalid token" }));
       socket.close();
-      console.warn("Invalid WebSocket token");
     }
   }
 
   private handleSocketClose(senderId: string) {
     const client = this.clients.get(senderId);
     if (client && client.userId) {
-      console.log(`❌ WebSocket disconnected: ${senderId} (User: ${client.userId})`);
-
-      // Check if user has other connections (multi-tab)
-      // We iterate clients to see if any OTHER client has same userId
       let hasOtherConnections = false;
       for (const [cid, c] of this.clients.entries()) {
         if (cid !== senderId && c.userId === client.userId) {
@@ -84,10 +70,7 @@ export class WSService {
 
       if (!hasOtherConnections) {
         this.onlineUsers.delete(client.userId);
-        this.broadcast({
-          type: "status:offline",
-          userId: client.userId
-        });
+        this.broadcast({ type: "status:offline", userId: client.userId });
       }
     }
     this.clients.delete(senderId);
@@ -97,20 +80,16 @@ export class WSService {
     try {
       const msg = JSON.parse(data.toString());
       const client = this.clients.get(senderId);
-      if (!client || !client.userId)
-        return;
+      if (!client || !client.userId) return;
 
-      if (msg.type === "room:join") {
-        client.roomId = msg.roomId;
+      if (msg.type === "chat:join") {
+        client.friendId = msg.friendId;
         return;
       }
-      // ... (inside class, handleMessage method)
 
       if (msg.type === "message:new") {
-        if (!client.roomId)
-          return;
+        if (!client.friendId) return;
 
-        // Fetch metadata if text exists
         let metadata = undefined;
         if (msg.text) {
           const meta = await fetchMetadata(msg.text);
@@ -119,39 +98,33 @@ export class WSService {
 
         const message = await this.prisma.message.create({
           data: {
-            text: msg.text || "", // Handle empty text if file only
+            text: msg.text || "",
             attachmentUrl: msg.attachmentUrl,
             attachmentType: msg.attachmentType,
-            metadata: metadata as any, // Cast to any or JsonValue
+            metadata: metadata as any,
             senderId: client.userId!,
-            roomId: client.roomId,
+            friendId: client.friendId,
           },
           include: {
             sender: true,
           },
         });
 
-        // Broadcast only to users in the same room
-        this.broadcastToRoom(client.roomId, {
+        this.broadcastToChat(client.friendId, {
           type: "message:new",
           message,
         });
       } else if (msg.type === "typing:start" || msg.type === "typing:stop") {
-        if (!client.roomId) return;
-
-        // Broadcast to room (exclude sender)
-        // We broadcast to ALL, client filters self, or we filter here.
-        // Let's filter here to save bandwidth.
-        this.broadcastToRoom(client.roomId, {
+        if (!client.friendId) return;
+        this.broadcastToChat(client.friendId, {
           type: msg.type,
           userId: client.userId,
-          roomId: client.roomId // useful context
-        }, client.id); // exclude sender
+          friendId: client.friendId
+        }, client.id);
       } else if (msg.type === "message:edit") {
-        if (!client.roomId || !msg.messageId || !msg.text) return;
-
+        if (!client.friendId || !msg.messageId || !msg.text) return;
         const message = await this.prisma.message.findUnique({ where: { id: msg.messageId } });
-        if (!message || message.senderId !== client.userId) return; // Ownership check
+        if (!message || message.senderId !== client.userId) return;
 
         const updated = await this.prisma.message.update({
           where: { id: msg.messageId },
@@ -159,32 +132,24 @@ export class WSService {
           include: { sender: true, reactions: { include: { user: { select: { id: true, name: true } } } } }
         });
 
-        this.broadcastToRoom(client.roomId, {
+        this.broadcastToChat(client.friendId, {
           type: "message:edit",
           message: updated
         });
-
       } else if (msg.type === "message:delete") {
-        if (!client.roomId || !msg.messageId) return;
-
+        if (!client.friendId || !msg.messageId) return;
         const message = await this.prisma.message.findUnique({ where: { id: msg.messageId } });
         if (!message || message.senderId !== client.userId) return;
 
-        // Delete interactions first if not using cascade? Prisma usually handles cascade if configured, 
-        // but Reaction relation might strictly need manual deletion if constraints aren't set to CASCADE.
-        // Let's assume schema handles it or do it safely:
         await this.prisma.reaction.deleteMany({ where: { messageId: msg.messageId } });
         await this.prisma.message.delete({ where: { id: msg.messageId } });
 
-        this.broadcastToRoom(client.roomId, {
+        this.broadcastToChat(client.friendId, {
           type: "message:delete",
           messageId: msg.messageId
         });
-
       } else if (msg.type === "message:react") {
-        if (!client.roomId || !msg.messageId || !msg.emoji) return;
-
-        // Toggle logic: check if exists
+        if (!client.friendId || !msg.messageId || !msg.emoji) return;
         const existing = await this.prisma.reaction.findUnique({
           where: {
             userId_messageId_emoji: {
@@ -207,28 +172,19 @@ export class WSService {
           });
         }
 
-        // Fetch updated reactions for this message to broadcast accurate state
         const reactions = await this.prisma.reaction.findMany({
           where: { messageId: msg.messageId },
           include: { user: { select: { id: true, name: true } } }
         });
 
-        this.broadcastToRoom(client.roomId, {
+        this.broadcastToChat(client.friendId, {
           type: "message:react",
           messageId: msg.messageId,
           reactions
         });
-      }
-
-      // --- WebRTC Signaling ---
-      else if (["call:invite", "call:answer", "call:candidate", "call:reject", "call:end"].includes(msg.type)) {
-        if (!client.roomId) return;
-
-        // For simplicity in room-based chat, we broadcast to the room (excluding sender).
-        this.broadcastToRoom(client.roomId, {
-          ...msg,
-          senderId: client.userId
-        }, client.id);
+      } else if (msg.type.startsWith("call:")) {
+        if (!client.friendId) return;
+        this.broadcastToChat(client.friendId, msg, client.id);
       }
     } catch (err) {
       console.error("WS error:", err);
@@ -244,10 +200,19 @@ export class WSService {
     }
   }
 
-  broadcastToRoom(roomId: number, payload: any, excludeClientId?: string) {
+  broadcastToChat(friendId: number, payload: any, excludeClientId?: string) {
     const data = JSON.stringify(payload);
     for (const client of this.clients.values()) {
-      if (client.roomId === roomId && client.socket.readyState === WebSocket.OPEN && client.id !== excludeClientId) {
+      if (client.friendId === friendId && client.socket.readyState === WebSocket.OPEN && client.id !== excludeClientId) {
+        client.socket.send(data);
+      }
+    }
+  }
+
+  sendToUser(userId: number, payload: any) {
+    const data = JSON.stringify(payload);
+    for (const client of this.clients.values()) {
+      if (client.userId === userId && client.socket.readyState === WebSocket.OPEN) {
         client.socket.send(data);
       }
     }

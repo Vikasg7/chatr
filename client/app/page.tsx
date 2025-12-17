@@ -4,19 +4,15 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/stores/auth";
 import GlobalHeader from "./components/GlobalHeader";
 import * as api from "@/lib/api";
-import { RoomList } from "./components/RoomList";
+import { FriendList } from "./components/FriendList";
 import { ChatHeader } from "./components/ChatHeader";
 import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
-import { CreateRoomModal } from "./components/CreateRoomModal";
-import { StartDmModal } from "./components/StartDmModal";
-import { InviteUserModal } from "./components/InviteUserModal";
+import { SearchUserModal } from "./components/SearchUserModal";
 import Onboarding from "./components/Onboarding";
-import { CallInterface } from "./components/CallInterface";
 import { motion } from 'framer-motion';
 
 // Hooks
-import { useWebRTC } from "@/hooks/useWebRTC";
 import { useChat } from "@/hooks/useChat";
 import { useAuthForm } from "@/hooks/useAuthForm";
 
@@ -29,14 +25,6 @@ export default function ChatPage() {
 
   // Chat Logic
   const chat = useChat(token, user);
-
-  // WebRTC Logic
-  const rtc = useWebRTC(chat.wsRef, user?.id);
-
-  // Wire up signaling
-  useEffect(() => {
-    chat.setSignalHandler(rtc.handleSignal);
-  }, [chat, rtc.handleSignal]);
 
   // Auth Verification
   useEffect(() => {
@@ -72,22 +60,47 @@ export default function ChatPage() {
 
   // Layout State
   const [showSidebar, setShowSidebar] = useState(false);
-  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
-  const [showStartDmModal, setShowStartDmModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
-  const currentRoom =
-    chat.rooms.find((r: any) => r.id === chat.currentRoomId) ||
-    chat.dmRooms.find((r: any) => r.id === chat.currentRoomId) ||
-    null;
+  const currentFriendship = chat.friends.find(f =>
+    (chat.currentFriendId && f.id === chat.currentFriendId) ||
+    (chat.selectedUserId && (f.senderId === chat.selectedUserId || f.receiverId === chat.selectedUserId))
+  );
+
+  const getFriendUser = (f: any) => {
+    if (!f) return null;
+    return f.senderId === user?.id ? f.receiver : f.sender;
+  };
+
+  const currentFriendUser = getFriendUser(currentFriendship);
 
   const getTypingText = () => {
     if (chat.typingUsers.size === 0) return null;
-    const ids = Array.from(chat.typingUsers);
-    if (ids.length === 1) return "Someone is typing...";
-    if (ids.length === 2) return "Two people are typing...";
-    return "Several people are typing...";
+    return "Typing...";
   };
+
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (!chat.selectedUserId) {
+      setSelectedUser(null);
+      return;
+    }
+    // Check if it's already in the friends list (it usually is if selected via sidebar)
+    const friendship = chat.friends.find(f => f.senderId === chat.selectedUserId || f.receiverId === chat.selectedUserId);
+    if (friendship) {
+      const u = friendship.senderId === user?.id ? friendship.receiver : friendship.sender;
+      setSelectedUser(u);
+    } else {
+      // Fetch fresh
+      (async () => {
+        try {
+          const u = await api.get(`/users/${chat.selectedUserId}`);
+          setSelectedUser(u);
+        } catch (e) { }
+      })();
+    }
+  }, [chat.selectedUserId, chat.friends, user?.id]);
 
   // Loading Screen
   if (!hydrated || (token && !ready)) {
@@ -102,7 +115,7 @@ export default function ChatPage() {
           <div className="text-left relative">
             <div className="absolute -left-10 -top-10 w-56 h-56 rounded-full bg-gradient-to-br from-indigo-700/30 to-blue-400/20 blur-3xl opacity-40 pointer-events-none" />
             <motion.h1 initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.36 }} className="text-5xl font-extrabold text-slate-100 mb-4">Chatr</motion.h1>
-            <p className="text-slate-300 prose-constrained mb-6">A simple, private chat experience. Connect with your team and friends — messages sync in real time.</p>
+            <p className="text-slate-300 prose-constrained mb-6">Connect with friends — messages sync in real time.</p>
             <button onClick={() => { auth.setMode("login"); auth.setEmail("demo@chatr.local"); auth.setPassword("password"); auth.login({ email: "demo@chatr.local", password: "password" }); }} className="rounded-full bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow">Try demo</button>
           </div>
 
@@ -113,10 +126,10 @@ export default function ChatPage() {
             </div>
 
             {auth.mode === "signup" && (
-              <input className="input mb-3" placeholder="Full Name" value={auth.name} onChange={e => auth.setName(e.target.value)} />
+              <input className="input w-full mb-3" placeholder="Full Name" value={auth.name} onChange={e => auth.setName(e.target.value)} />
             )}
-            <input className="input mb-3" placeholder="Email" value={auth.email} onChange={e => auth.setEmail(e.target.value)} />
-            <input type="password" className="input mb-4" placeholder="Password" value={auth.password} onChange={e => auth.setPassword(e.target.value)} />
+            <input className="input w-full mb-3" placeholder="Email" value={auth.email} onChange={e => auth.setEmail(e.target.value)} />
+            <input type="password" className="input w-full mb-4" placeholder="Password" value={auth.password} onChange={e => auth.setPassword(e.target.value)} />
 
             <button disabled={auth.loading} onClick={() => auth.mode === "login" ? auth.login() : auth.signup()} className="btn-primary w-full">
               {auth.loading ? "Processing..." : (auth.mode === "login" ? "Sign in" : "Create account")}
@@ -130,50 +143,43 @@ export default function ChatPage() {
   return (
     <>
       <GlobalHeader onMenuClick={() => setShowSidebar(true)} />
-
-      <CallInterface
-        callState={rtc.callState}
-        caller={rtc.callMeta.caller}
-        target={rtc.callMeta.target}
-        localStream={rtc.localStream}
-        remoteStream={rtc.remoteStream}
-        onAccept={rtc.acceptCall}
-        onReject={rtc.rejectCall}
-        onEnd={rtc.endCall}
-        isMuted={rtc.isMuted}
-        isVideoOff={rtc.isVideoOff}
-        toggleMute={rtc.toggleMute}
-        toggleVideo={rtc.toggleVideo}
-      />
-
       <Onboarding />
 
       <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col relative">
         <div className="flex flex-1 overflow-hidden relative">
 
-          {/* Mobile Overlay */}
-          {showSidebar && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setShowSidebar(false)} />}
-
           {/* Sidebar */}
           <aside className={`w-64 border-r border-slate-800 bg-slate-950 px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 md:relative md:translate-x-0 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="mb-1 flex justify-between items-center"><h2 className="sidebar-heading">Rooms</h2><button onClick={() => setShowCreateRoomModal(true)} className="text-xl text-slate-300 hover:text-indigo-400">+</button></div>
-            <RoomList rooms={chat.rooms} currentRoomId={chat.currentRoomId} onSelect={(id) => { chat.joinRoom(id); setShowSidebar(false); }} currentUserId={user?.id} onlineUsers={chat.onlineUsers} />
+            <div className="mb-4 flex justify-between items-center">
+              <h2 className="sidebar-heading">Friends</h2>
+              <button
+                onClick={() => setShowSearchModal(true)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all text-xl font-bold"
+                title="Start New Conversation"
+              >+</button>
+            </div>
 
-            <div className="mt-4 mb-1 flex justify-between items-center"><h2 className="sidebar-heading">Direct Messages</h2><button onClick={() => setShowStartDmModal(true)} className="text-xl text-slate-300 hover:text-indigo-400">+</button></div>
-            <RoomList rooms={chat.dmRooms} currentRoomId={chat.currentRoomId} onSelect={(id) => { chat.joinRoom(id); setShowSidebar(false); }} currentUserId={user?.id} onlineUsers={chat.onlineUsers} />
+            <FriendList
+              friends={chat.friends}
+              currentFriendId={chat.currentFriendId}
+              onSelect={(id) => { chat.selectFriend(id); setShowSidebar(false); }}
+              currentUserId={user?.id}
+              onlineUsers={chat.onlineUsers}
+            />
 
-            <div className="pt-3 border-t border-slate-800 meta-small mt-auto">Connected as <span className="font-medium">{user?.email}</span></div>
+            <div className="pt-3 border-t border-slate-800 meta-small mt-auto">
+              Connected as <span className="font-medium">{user?.email}</span>
+            </div>
           </aside>
 
-          {/* Chat Area */}
-          <section className="flex-1 flex flex-col">
+          <section className="flex-1 flex flex-col relative min-w-0">
             <ChatHeader
               connected={chat.connected}
-              roomName={currentRoom ? currentRoom.name : "Select a room"}
-              subtitle={currentRoom ? "Messages are synced in real time." : "Choose a room."}
-              onInvite={currentRoom?.ownerId === user?.id ? () => setShowInviteModal(true) : undefined}
+              roomName={selectedUser ? (selectedUser.name || selectedUser.email.split("@")[0]) : "Select a friend"}
+              subtitle={selectedUser ? `Chatting with ${selectedUser.email}` : "Find someone to chat with!"}
               typingText={getTypingText()}
-              onCall={() => rtc.startCall(chat.currentRoomId!)}
+              onUnfriend={() => currentFriendship && chat.unfriend(currentFriendship.id)}
+              isAccepted={currentFriendship?.status === "ACCEPTED"}
             />
 
             <MessageList
@@ -184,23 +190,49 @@ export default function ChatPage() {
               onDelete={chat.deleteMsg}
             />
 
-            <MsgInput
-              value={input}
-              onChange={setInput}
-              onSend={sendMsg}
-              onTyping={chat.handleTyping}
-              disabled={!chat.connected || !currentRoom}
-              isEditing={!!editingMessage}
-              onCancelEdit={() => { setEditingMessage(null); setInput(""); }}
-            />
+            {currentFriendship && (
+              <MsgInput
+                value={input}
+                onChange={setInput}
+                onSend={sendMsg}
+                onTyping={chat.handleTyping}
+                disabled={!chat.connected}
+                isEditing={!!editingMessage}
+                onCancelEdit={() => { setEditingMessage(null); setInput(""); }}
+                friendshipStatus={currentFriendship.status}
+                isSender={currentFriendship.senderId === user?.id}
+                onSendRequest={() => chat.sendFriendRequest(selectedUser?.id)}
+                onAcceptRequest={() => chat.acceptFriendRequest(currentFriendship.id)}
+              />
+            )}
+
+            {!currentFriendship && selectedUser && (
+              <MsgInput
+                value={input}
+                onChange={setInput}
+                onSend={sendMsg}
+                onTyping={chat.handleTyping}
+                disabled={!chat.connected}
+                onSendRequest={() => chat.sendFriendRequest(selectedUser.id)}
+              />
+            )}
+
+            {!currentFriendship && !selectedUser && (
+              <div className="h-24 flex items-center justify-center border-t border-slate-800 bg-slate-950/90 text-slate-500 text-sm italic">
+                Select a friend from the sidebar to start chatting
+              </div>
+            )}
           </section>
         </div>
       </main>
 
-      {/* Modals */}
-      <CreateRoomModal open={showCreateRoomModal} onClose={() => setShowCreateRoomModal(false)} onCreate={chat.createRoom} />
-      <StartDmModal open={showStartDmModal} onClose={() => setShowStartDmModal(false)} onSelectUser={chat.startDm} />
-      <InviteUserModal open={showInviteModal} onClose={() => setShowInviteModal(false)} onInvite={chat.inviteUser} />
+      <SearchUserModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onSelect={chat.selectUser}
+        currentUserId={user?.id}
+        existingFriendIds={chat.friends.map(f => getFriendUser(f)?.id)}
+      />
     </>
   );
 }
