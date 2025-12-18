@@ -31,7 +31,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         const pc = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         });
-
+        
         pc.onicecandidate = (event) => {
             if (event.candidate) {
                 onSignal({ type: 'call:signal', candidate: event.candidate });
@@ -144,28 +144,59 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         if (data.type === 'call:answer') {
             if (pcRef.current && pcRef.current.signalingState !== 'closed') {
                 try {
-                    await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    await pcRef.current.setRemoteDescription(
+                        new RTCSessionDescription(data.answer)
+                    );
+
+                    // 🔥 Flush buffered ICE candidates AFTER remote description
+                    for (const candidate of pendingCandidatesRef.current) {
+                        try {
+                            await pcRef.current.addIceCandidate(
+                                new RTCIceCandidate(candidate)
+                            );
+                        } catch (err) {
+                            console.error('Failed to add buffered ICE:', err);
+                        }
+                    }
+                    pendingCandidatesRef.current = [];
                 } catch (err) {
                     console.error('Failed to set remote description:', err);
                 }
             }
-        } else if (data.type === 'call:signal' && data.candidate) {
-            if (pcRef.current && pcRef.current.signalingState !== 'closed' && pcRef.current.remoteDescription) {
+            return;
+        }
+
+        if (data.type === 'call:signal' && data.candidate) {
+            if (!pcRef.current || pcRef.current.signalingState === 'closed') {
+                return;
+            }
+
+            // ✅ ALWAYS buffer if remoteDescription not set yet
+            if (pcRef.current.remoteDescription) {
                 try {
-                    await pcRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    await pcRef.current.addIceCandidate(
+                        new RTCIceCandidate(data.candidate)
+                    );
                 } catch (err) {
                     console.error('Failed to add ICE candidate:', err);
                 }
-            } else if (pendingOfferRef.current) {
-                // Queue candidates if we have a pending offer but no peer connection yet
+            } else {
                 pendingCandidatesRef.current.push(data.candidate);
             }
-        } else if (data.type === 'call:cancel' || data.type === 'call:reject' || data.type === 'call:end') {
-            // Clear any pending data if call is cancelled/rejected/ended
+            return;
+        }
+
+        if (
+            data.type === 'call:cancel' ||
+            data.type === 'call:reject' ||
+            data.type === 'call:end'
+        ) {
             pendingOfferRef.current = null;
             pendingCandidatesRef.current = [];
+            cleanup();
         }
-    }, []);
+    }, [cleanup]);
+
 
     const toggleAudio = useCallback(() => {
         if (localStreamRef.current) {
