@@ -154,7 +154,11 @@ export class WSService {
       } else if (msg.type === "message:react") {
         if (!client.friendId || !msg.messageId || !msg.emoji) return;
 
-        // 1. Check for existing reaction by this user on this message
+        // 1. Ensure user is not reacting to their own message
+        const message = await this.prisma.message.findUnique({ where: { id: msg.messageId } });
+        if (!message || message.senderId === client.userId) return;
+
+        // 2. Check for existing reaction by this user on this message (single reaction only)
         const existing = await this.prisma.reaction.findFirst({
           where: {
             userId: client.userId!,
@@ -167,7 +171,7 @@ export class WSService {
           if (existing.emoji === msg.emoji) {
             await this.prisma.reaction.delete({ where: { id: existing.id } });
           } else {
-            // If different, update to new emoji
+            // If different, update to new emoji (replaces previous reaction)
             await this.prisma.reaction.update({
               where: { id: existing.id },
               data: { emoji: msg.emoji }

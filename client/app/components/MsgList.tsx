@@ -219,8 +219,8 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                             return (
                               <button
                                 key={emoji}
-                                onClick={() => onReact?.(m.id, emoji)}
-                                className={`flex items-center gap-1 filter drop-shadow-xl select-none transition-transform duration-200 hover:scale-125 active:scale-95 ${hasReacted ? 'scale-110' : 'scale-100'}`}
+                                onClick={() => !mine && onReact?.(m.id, emoji)}
+                                className={`flex items-center gap-1 filter drop-shadow-xl select-none transition-transform duration-200 ${mine ? 'cursor-default' : 'hover:scale-125 active:scale-95'} ${hasReacted ? 'scale-110' : 'scale-100'}`}
                                 title={reactions.map((r: any) => r.user.name).join(', ')}
                               >
                                 <div className="relative">
