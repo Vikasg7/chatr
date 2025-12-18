@@ -106,7 +106,7 @@ export class WSService {
             friendId: client.friendId,
           },
           include: {
-            sender: true,
+            sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
           },
         });
 
@@ -129,7 +129,10 @@ export class WSService {
         const updated = await this.prisma.message.update({
           where: { id: msg.messageId },
           data: { text: msg.text },
-          include: { sender: true, reactions: { include: { user: { select: { id: true, name: true } } } } }
+          include: {
+            sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
+            reactions: { include: { user: { select: { id: true, name: true } } } }
+          }
         });
 
         this.broadcastToChat(client.friendId, {
@@ -150,19 +153,28 @@ export class WSService {
         });
       } else if (msg.type === "message:react") {
         if (!client.friendId || !msg.messageId || !msg.emoji) return;
-        const existing = await this.prisma.reaction.findUnique({
+
+        // 1. Check for existing reaction by this user on this message
+        const existing = await this.prisma.reaction.findFirst({
           where: {
-            userId_messageId_emoji: {
-              userId: client.userId!,
-              messageId: msg.messageId,
-              emoji: msg.emoji
-            }
+            userId: client.userId!,
+            messageId: msg.messageId
           }
         });
 
         if (existing) {
-          await this.prisma.reaction.delete({ where: { id: existing.id } });
+          // If same emoji, toggle off
+          if (existing.emoji === msg.emoji) {
+            await this.prisma.reaction.delete({ where: { id: existing.id } });
+          } else {
+            // If different, update to new emoji
+            await this.prisma.reaction.update({
+              where: { id: existing.id },
+              data: { emoji: msg.emoji }
+            });
+          }
         } else {
+          // No existing, create new
           await this.prisma.reaction.create({
             data: {
               userId: client.userId!,

@@ -41,8 +41,9 @@ export function useChat(token: string | null, user: any) {
         setMessages(prev => [...prev, msg].sort((a, b) => a.id - b.id));
     }, []);
 
-    const selectFriend = useCallback(async (friendshipId: number) => {
-        const friendship = friendsRef.current.find(f => f.id === friendshipId);
+    const selectFriend = useCallback(async (friendshipId: number, friendsOverride?: any[]) => {
+        const list = friendsOverride || friends;
+        const friendship = list.find(f => f.id === friendshipId);
         if (friendship) {
             const otherUser = friendship.senderId === user?.id ? friendship.receiver : friendship.sender;
             setSelectedUserId(otherUser?.id || null);
@@ -51,7 +52,7 @@ export function useChat(token: string | null, user: any) {
         wsRef.current?.send(JSON.stringify({ type: "chat:join", friendId: friendshipId }));
         const msgs = await api.get(`/friends/${friendshipId}/messages`);
         setMessages((msgs || []).sort((a: any, b: any) => a.id - b.id));
-    }, [user?.id]);
+    }, [user?.id, friends]);
 
     // Initial Data Load
     useEffect(() => {
@@ -64,7 +65,7 @@ export function useChat(token: string | null, user: any) {
                 // One-time auto-select on mount
                 const firstAccepted = f.find((fr: any) => fr.status === "ACCEPTED");
                 if (firstAccepted && !currentFriendId) {
-                    selectFriend(firstAccepted.id);
+                    selectFriend(firstAccepted.id, f);
                 }
             } catch (e) { console.error(e); }
         })();

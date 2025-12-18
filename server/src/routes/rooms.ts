@@ -73,7 +73,10 @@ export default (prisma: PrismaClient) => {
     if (room.ownerId !== userId) return res.status(403).json({ error: "Only owner can invite" });
 
     // 2. Find target user
-    const target = await prisma.user.findUnique({ where: { email } });
+    const target = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true }
+    });
     if (!target) return res.status(404).json({ error: "User not found" });
 
     // 3. Create Invite

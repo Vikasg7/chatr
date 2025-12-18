@@ -15,3 +15,6 @@ dist/
 
 # Prisma generated client
 # (prisma generates code inside node_modules/prisma/** — already ignored)
+
+public/uploads/*
+!public/uploads/.gitkeep

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as format from "@/lib/format";
 import { useAuthStore } from "@/stores/auth";
@@ -17,13 +17,23 @@ interface MessageListProps {
 
 export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete, onAcceptInvite }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [activePickerId, setActivePickerId] = useState<number | null>(null);
   const userId = currentUserId;
+
+  const prevCountRef = useRef(messages.length);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const isNewMessage = messages.length > prevCountRef.current;
+      const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 100;
+
+      // Only scroll if a new message was added and user is near bottom (or it's their own message)
+      if (isNewMessage && (isNearBottom || messages[messages.length - 1]?.sender?.id === currentUserId)) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
     }
-  }, [messages]);
+    prevCountRef.current = messages.length;
+  }, [messages, currentUserId]);
 
   return (
     <div
@@ -35,17 +45,24 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
           No messages yet. Be the first to say hi 👋
         </div>
       ) : (
-        <div className="flex flex-col py-4">
+        <div className="flex flex-col">
           <AnimatePresence initial={false}>
             {messages.map((m, i) => {
               const mine = m.sender.id === userId;
               const prev = messages[i - 1];
+              const next = messages[i + 1];
               const time = m.createdAt ? new Date(m.createdAt).getTime() : 0;
               const prevTime = prev ? new Date(prev.createdAt).getTime() : 0;
+              const nextTime = next ? new Date(next.createdAt).getTime() : 0;
 
               // group messages if they are from the same sender within 1 minute
               const withinWindow = (a: number, b: number) => Math.abs(a - b) < 1 * 60 * 1000;
               const isFirstInGroup = !prev || prev.sender.id !== m.sender.id || !withinWindow(time, prevTime);
+              const isLastInGroup = !next || next.sender.id !== m.sender.id || !withinWindow(time, nextTime);
+
+              const isLastMessage = i === messages.length - 1;
+              const hasReactions = m.reactions && m.reactions.length > 0;
+              const marginClass = isLastMessage ? 'mb-0' : (isLastInGroup || hasReactions ? 'mb-6' : 'mb-1');
 
               return (
                 <motion.div
@@ -55,7 +72,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.15 }}
-                  className={`group flex items-start gap-3 w-full px-4 ${mine ? 'flex-row-reverse' : 'flex-row'} ${isFirstInGroup ? 'mt-6' : 'mt-1'}`}
+                  className={`group flex items-start gap-3 w-full px-4 ${mine ? 'flex-row-reverse pl-20' : 'flex-row pr-20'} ${marginClass}`}
                 >
                   {/* Time Marker - Only show for first in group */}
                   <div className={`w-12 flex-shrink-0 text-[10px] text-slate-600 font-medium pt-2 ${mine ? 'text-left' : 'text-right'}`}>
@@ -63,17 +80,17 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                   </div>
 
                   {/* Message Content Container */}
-                  <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[80%] md:max-w-[70%]`}>
+                  <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[70%] sm:max-w-[60%] lg:max-w-[50%]`}>
                     <div
                       className={`
-                        relative px-3 py-2 shadow-sm text-sm break-words group
+                        relative px-3 py-2 shadow-sm text-sm break-all group
                         ${mine
                           ? 'bg-indigo-600 text-indigo-50 rounded-2xl rounded-tr-sm'
                           : 'bg-slate-800 text-slate-200 rounded-2xl rounded-tl-sm'}
                       `}
                     >
                       {/* Text Content */}
-                      <div className="whitespace-pre-wrap leading-relaxed">
+                      <div className="whitespace-pre-wrap leading-relaxed break-all">
                         {m.text}
                       </div>
 
@@ -122,57 +139,104 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                         </a>
                       )}
 
-                      {/* Actions Overlays */}
-                      {mine && (
-                        <div className="absolute top-1/2 -left-12 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1 hover:text-indigo-400 transition-colors" onClick={() => onEdit?.(m)} title="Edit">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                          </button>
-                          <button className="p-1 hover:text-red-400 transition-colors" onClick={() => onDelete?.(m.id)} title="Delete">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                          </button>
-                        </div>
-                      )}
-
+                      {/* Reactions Trigger (Smiley Icon) - Only for other people's messages */}
                       {!mine && (
-                        <div className="absolute top-1/2 -right-12 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="relative group/react">
-                            <button className="p-1 hover:text-indigo-400 transition-colors font-bold text-xs">+</button>
-                            <div className="absolute bottom-full mb-1 bg-slate-900 border border-slate-700 rounded-full flex gap-1 p-1 shadow-xl z-20 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-opacity -right-4 flex-nowrap shrink-0">
-                              {["👍", "❤️", "😂", "😮", "😢", "🔥"].map(emoji => (
-                                <button key={emoji} onClick={() => onReact && onReact(m.id, emoji)} className="hover:scale-125 transition text-lg leading-none p-1">{emoji}</button>
-                              ))}
-                            </div>
-                          </div>
+                        <div className="absolute top-1/2 -right-8 -translate-y-1/2">
+                          <button
+                            onClick={() => setActivePickerId(activePickerId === m.id ? null : m.id)}
+                            className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                            title="React"
+                          >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 group-hover:opacity-100 transition-opacity">
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                              <circle cx="9" cy="9" r="0.5" fill="currentColor" />
+                              <circle cx="15" cy="9" r="0.5" fill="currentColor" />
+                            </svg>
+                          </button>
+
+                          <AnimatePresence>
+                            {activePickerId === m.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                                className="absolute bottom-full mb-2 z-[110] flex items-center gap-0.5 p-1 bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-full shadow-2xl left-0"
+                              >
+                                {["👍", "❤️", "😂", "😮", "😢", "🙏", "😘"].map(emoji => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => {
+                                      onReact?.(m.id, emoji);
+                                      setActivePickerId(null);
+                                    }}
+                                    className="hover:scale-125 transition text-xl leading-none p-1 active:scale-95"
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       )}
-                    </div>
 
-                    {/* Reactions Display */}
-                    <div className="mt-1 flex items-center gap-1 flex-wrap">
-                      {(Object.entries((m.reactions || []).reduce((acc: any, r: any) => {
-                        acc[r.emoji] = acc[r.emoji] || [];
-                        acc[r.emoji].push(r);
-                        return acc;
-                      }, {})) as [string, any[]][]).map(([emoji, reactions]) => {
-                        const hasReacted = reactions.some(r => r.user.id === userId);
-                        return (
+                      {/* Edit/Delete Actions (Only for my messages) - Using Icons now */}
+                      {mine && (
+                        <div className="absolute top-0 -left-14 h-full flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
                           <button
-                            key={emoji}
-                            onClick={() => onReact && onReact(m.id, emoji)}
-                            className={`
-                              flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border transition shadow-sm
-                              ${hasReacted
-                                ? 'bg-indigo-500 text-white border-indigo-400'
-                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}
-                            `}
-                            title={reactions.map((r: any) => r.user.name).join(', ')}
+                            className="p-1 px-1 text-slate-400 hover:text-indigo-400 hover:scale-110 transition-all"
+                            onClick={() => onEdit?.(m)}
+                            title="Edit"
                           >
-                            <span>{emoji}</span>
-                            {reactions.length > 1 && <span>{reactions.length}</span>}
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
                           </button>
-                        );
-                      })}
+                          <button
+                            className="p-1 text-slate-400 hover:text-red-400 hover:scale-110 transition-all"
+                            onClick={() => onDelete?.(m.id)}
+                            title="Delete"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Reactions Display (Transparent, floating) */}
+                      {m.reactions && m.reactions.length > 0 && (
+                        <div className={`absolute -bottom-5 ${mine ? 'right-2' : 'left-2'} flex items-center gap-2 z-30 whitespace-nowrap`}>
+                          {(Object.entries(m.reactions.reduce((acc: any, r: any) => {
+                            acc[r.emoji] = acc[r.emoji] || [];
+                            acc[r.emoji].push(r);
+                            return acc;
+                          }, {})) as [string, any[]][]).map(([emoji, reactions]) => {
+                            const hasReacted = reactions.some(r => r.user.id === userId);
+                            return (
+                              <button
+                                key={emoji}
+                                onClick={() => onReact?.(m.id, emoji)}
+                                className={`flex items-center gap-1 filter drop-shadow-xl select-none transition-transform duration-200 hover:scale-125 active:scale-95 ${hasReacted ? 'scale-110' : 'scale-100'}`}
+                                title={reactions.map((r: any) => r.user.name).join(', ')}
+                              >
+                                <div className="relative">
+                                  <span className="text-xl leading-none">{emoji}</span>
+                                  {reactions.length > 1 && (
+                                    <span className="absolute -top-1.5 -right-2 text-[9px] text-white bg-indigo-600 px-1 rounded-full font-black border border-white/20 backdrop-blur-sm min-w-[14px] h-[14px] flex items-center justify-center text-center shadow-lg">
+                                      {reactions.length}
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
                     </div>
                   </div>
                 </motion.div>

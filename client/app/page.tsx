@@ -9,7 +9,6 @@ import { ChatHeader } from "./components/ChatHeader";
 import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
 import { SearchUserModal } from "./components/SearchUserModal";
-import Onboarding from "./components/Onboarding";
 import { motion } from 'framer-motion';
 
 // Hooks
@@ -143,7 +142,6 @@ export default function ChatPage() {
   return (
     <>
       <GlobalHeader onMenuClick={() => setShowSidebar(true)} />
-      <Onboarding />
 
       <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col relative">
         <div className="flex flex-1 overflow-hidden relative">

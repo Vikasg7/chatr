@@ -94,10 +94,12 @@ body {
 /* Custom scrollbars for the app */
 .scroll-thin {
   scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle) transparent;
 }
 
 .scroll-thin::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 .scroll-thin::-webkit-scrollbar-track {
@@ -107,6 +109,37 @@ body {
 .scroll-thin::-webkit-scrollbar-thumb {
   background: var(--border-subtle);
   border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Global scrollbar styling for a consistent themed feel */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 5px;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  border: 3px solid transparent;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--accent-strong);
 }
 
 /* Utility helpers for the design tokens (optional) */

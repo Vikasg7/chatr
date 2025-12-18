@@ -14,17 +14,21 @@ export default function (prisma: PrismaClient) {
       return res.status(400).json({ error: "email+password required" });
 
     try {
-      const existing = await prisma.user.findUnique({ where: { email } });
+      const existing = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true }
+      });
       if (existing)
         return res.status(409).json({ error: "email already in use" });
 
       const hash = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
         data: { email, password: hash, name },
+        select: { id: true, email: true, name: true, avatarUrl: true }
       });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
-      res.json({ user: { id: user.id, email: user.email, name: user.name, onboardingSeen: user.onboardingSeen ?? false }, token });
+      res.json({ user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl }, token });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "server error" });
@@ -37,7 +41,10 @@ export default function (prisma: PrismaClient) {
       return res.status(400).json({ error: "email+password required" });
 
     try {
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, password: true, name: true, avatarUrl: true }
+      });
       if (!user)
         return res.status(401).json({ error: "invalid credentials" });
 
@@ -46,7 +53,7 @@ export default function (prisma: PrismaClient) {
         return res.status(401).json({ error: "invalid credentials" });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
-      res.json({ user: { id: user.id, email: user.email, name: user.name, onboardingSeen: user.onboardingSeen ?? false }, token });
+      res.json({ user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl }, token });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "server error" });
@@ -61,36 +68,20 @@ export default function (prisma: PrismaClient) {
     const token = auth.slice(7);
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { id: true, email: true, name: true, avatarUrl: true }
+      });
       if (!user)
         return res.status(401).json({ error: "unauthorized" });
 
-      res.json({ id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, onboardingSeen: user.onboardingSeen ?? false });
+      res.json({ id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl });
     } catch (err) {
       console.error(err);
       res.status(401).json({ error: "unauthorized" });
     }
   });
 
-  // Persist onboarding seen flag for the authenticated user
-  router.post("/onboarding", async (req, res) => {
-    const auth = req.headers.authorization;
-    if (!auth || !auth.startsWith("Bearer "))
-      return res.status(401).json({ error: "unauthorized" });
-
-    const token = auth.slice(7);
-    const { seen } = req.body;
-    if (typeof seen !== 'boolean') return res.status(400).json({ error: 'seen boolean required' });
-
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-      const user = await prisma.user.update({ where: { id: decoded.userId }, data: { onboardingSeen: seen } });
-      res.json({ success: true, onboardingSeen: user.onboardingSeen });
-    } catch (err) {
-      console.error(err);
-      res.status(401).json({ error: "unauthorized" });
-    }
-  });
 
   // Profile Update (Name & Avatar)
   const uploadDir = require("path").join(__dirname, "../../public/uploads");
@@ -128,7 +119,8 @@ export default function (prisma: PrismaClient) {
 
       const user = await prisma.user.update({
         where: { id: userId },
-        data: updateData
+        data: updateData,
+        select: { id: true, email: true, name: true, avatarUrl: true }
       });
 
       res.json({
@@ -136,8 +128,7 @@ export default function (prisma: PrismaClient) {
           id: user.id,
           email: user.email,
           name: user.name,
-          avatarUrl: user.avatarUrl,
-          onboardingSeen: user.onboardingSeen ?? false
+          avatarUrl: user.avatarUrl
         }
       });
     } catch (err) {
