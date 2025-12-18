@@ -9,9 +9,10 @@ interface ChatHeaderProps {
   isAccepted?: boolean;
   typingText?: string | null;
   onCall?: () => void;
+  onVideoCall?: () => void;
 }
 
-export function ChatHeader({ connected, roomName, subtitle, onInvite, onUnfriend, isAccepted, typingText, onCall }: ChatHeaderProps) {
+export function ChatHeader({ connected, roomName, subtitle, onInvite, onUnfriend, isAccepted, typingText, onCall, onVideoCall }: ChatHeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80">
       <div>
@@ -42,8 +43,10 @@ export function ChatHeader({ connected, roomName, subtitle, onInvite, onUnfriend
               </svg>
             </button>
             <button
-              className="p-2 text-slate-400 cursor-not-allowed opacity-40 hover:bg-slate-800 rounded-full transition"
-              title="Video call coming soon"
+              onClick={onVideoCall}
+              className={`p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-full transition ${!onVideoCall ? 'cursor-not-allowed opacity-40' : ''}`}
+              title={onVideoCall ? "Start Video Call" : "Video call coming soon"}
+              disabled={!onVideoCall}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
             </button>

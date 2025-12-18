@@ -24,6 +24,7 @@ export function useChat(token: string | null, user: any) {
     const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
     const [callStatus, setCallStatus] = useState<'IDLE' | 'RINGING_OUT' | 'RINGING_IN' | 'ACTIVE'>('IDLE');
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const [callType, setCallType] = useState<'audio' | 'video'>('audio');
 
     const wsRef = useRef<WebSocket | null>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -181,6 +182,9 @@ export function useChat(token: string | null, user: any) {
                     return next;
                 });
             }
+            else if (data.type === "call:type") {
+                setCallType(data.callType);
+            }
             else if (data.type === "call:request") {
                 if (callStatus !== 'IDLE') {
                     wsRef.current?.send(JSON.stringify({ type: "call:reject", friendId: currentFriendId }));
@@ -331,6 +335,8 @@ export function useChat(token: string | null, user: any) {
         callStatus,
         setCallStatus,
         remoteStream,
-        setRemoteStream
+        setRemoteStream,
+        callType,
+        setCallType
     };
 }

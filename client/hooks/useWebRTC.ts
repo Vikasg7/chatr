@@ -3,9 +3,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 interface UseWebRTCProps {
     onSignal: (data: any) => void;
     onStream: (stream: MediaStream) => void;
+    video?: boolean;
 }
 
-export function useWebRTC({ onSignal, onStream }: UseWebRTCProps) {
+export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps) {
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
     const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
@@ -56,7 +57,11 @@ export function useWebRTC({ onSignal, onStream }: UseWebRTCProps) {
                     noiseSuppression: true,
                     autoGainControl: true,
                 },
-                video: false
+                video: video ? {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                } : false
             });
             localStreamRef.current = stream;
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -84,7 +89,11 @@ export function useWebRTC({ onSignal, onStream }: UseWebRTCProps) {
                         noiseSuppression: true,
                         autoGainControl: true,
                     },
-                    video: false
+                    video: video ? {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    } : false
                 });
                 localStreamRef.current = stream;
                 stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -115,5 +124,27 @@ export function useWebRTC({ onSignal, onStream }: UseWebRTCProps) {
         }
     }, [createPeerConnection, onSignal, cleanup]);
 
-    return { startCall, handleSignal, cleanup, connectionState };
+    const toggleAudio = useCallback(() => {
+        if (localStreamRef.current) {
+            const audioTrack = localStreamRef.current.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                return audioTrack.enabled;
+            }
+        }
+        return true;
+    }, []);
+
+    const toggleVideo = useCallback(() => {
+        if (localStreamRef.current) {
+            const videoTrack = localStreamRef.current.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                return videoTrack.enabled;
+            }
+        }
+        return true;
+    }, []);
+
+    return { startCall, handleSignal, cleanup, connectionState, localStream: localStreamRef.current, toggleAudio, toggleVideo };
 }

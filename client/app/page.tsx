@@ -16,6 +16,7 @@ import { useChat } from "@/hooks/useChat";
 import { useAuthForm } from "@/hooks/useAuthForm";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { CallOverlay } from "./components/CallOverlay";
+import { VideoCallOverlay } from "./components/VideoCallOverlay";
 
 export default function ChatPage() {
   const { token, user, hydrated, setUser } = useAuthStore();
@@ -36,7 +37,8 @@ export default function ChatPage() {
     },
     onStream: (stream) => {
       chat.setRemoteStream(stream);
-    }
+    },
+    video: chat.callType === 'video'
   });
 
   useEffect(() => {
@@ -46,8 +48,31 @@ export default function ChatPage() {
   }, [chat, webRTC]);
 
   const handleStartCall = () => {
+    chat.setCallType('audio');
     chat.setCallStatus('RINGING_OUT');
     webRTC.startCall();
+    // Send call type to peer
+    if (chat.wsRef.current) {
+      chat.wsRef.current.send(JSON.stringify({
+        type: 'call:type',
+        callType: 'audio',
+        friendId: chat.currentFriendId
+      }));
+    }
+  };
+
+  const handleStartVideoCall = () => {
+    chat.setCallType('video');
+    chat.setCallStatus('RINGING_OUT');
+    webRTC.startCall();
+    // Send call type to peer
+    if (chat.wsRef.current) {
+      chat.wsRef.current.send(JSON.stringify({
+        type: 'call:type',
+        callType: 'video',
+        friendId: chat.currentFriendId
+      }));
+    }
   };
 
   const handleEndCall = (duration?: string) => {
@@ -244,6 +269,7 @@ export default function ChatPage() {
               onUnfriend={() => currentFriendship && chat.unfriend(currentFriendship.id)}
               isAccepted={currentFriendship?.status === "ACCEPTED"}
               onCall={handleStartCall}
+              onVideoCall={handleStartVideoCall}
             />
 
             <MessageList
@@ -298,17 +324,33 @@ export default function ChatPage() {
         existingFriendIds={chat.friends.map(f => getFriendUser(f)?.id)}
       />
 
-      <CallOverlay
-        status={chat.callStatus}
-        callerName={currentFriendUser?.name || currentFriendUser?.email.split("@")[0]}
-        onAnswer={handleAnswerCall}
-        onReject={handleRejectCall}
-        onCancel={handleCancelCall}
-        onEnd={handleEndCall}
-      />
+      {chat.callType === 'audio' ? (
+        <CallOverlay
+          status={chat.callStatus}
+          callerName={currentFriendUser?.name || currentFriendUser?.email.split("@")[0]}
+          onAnswer={handleAnswerCall}
+          onReject={handleRejectCall}
+          onCancel={handleCancelCall}
+          onEnd={handleEndCall}
+          onToggleAudio={webRTC.toggleAudio}
+        />
+      ) : (
+        <VideoCallOverlay
+          status={chat.callStatus}
+          callerName={currentFriendUser?.name || currentFriendUser?.email.split("@")[0]}
+          localStream={webRTC.localStream}
+          remoteStream={chat.remoteStream}
+          onAnswer={handleAnswerCall}
+          onReject={handleRejectCall}
+          onCancel={handleCancelCall}
+          onEnd={handleEndCall}
+          onToggleAudio={webRTC.toggleAudio}
+          onToggleVideo={webRTC.toggleVideo}
+        />
+      )}
 
-      {/* Hidden Remote Audio */}
-      {chat.remoteStream && chat.callStatus === 'ACTIVE' && (
+      {/* Hidden Remote Audio (audio calls only) */}
+      {chat.remoteStream && chat.callStatus === 'ACTIVE' && chat.callType === 'audio' && (
         <audio
           autoPlay
           ref={(audio) => {
