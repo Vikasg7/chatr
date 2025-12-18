@@ -1,179 +1,119 @@
-import { useState, useRef, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
-const ICE_SERVERS = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-};
+interface UseWebRTCProps {
+    onSignal: (data: any) => void;
+    onStream: (stream: MediaStream) => void;
+}
 
-export function useWebRTC(wsRef: React.MutableRefObject<WebSocket | null>, userId?: number) {
-    const [callState, setCallState] = useState<"idle" | "incoming" | "calling" | "connected">("idle");
-    const [callMeta, setCallMeta] = useState<{ caller?: { id: number; name: string }; target?: { id: number; name: string } }>({});
-    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-    const [isMuted, setIsMuted] = useState(false);
-    const [isVideoOff, setIsVideoOff] = useState(false);
-
+export function useWebRTC({ onSignal, onStream }: UseWebRTCProps) {
+    const pcRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
-    const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+    const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
 
-    const endCall = useCallback(() => {
-        if (peerConnectionRef.current) {
-            peerConnectionRef.current.close();
-            peerConnectionRef.current = null;
+    const cleanup = useCallback(() => {
+        if (pcRef.current) {
+            pcRef.current.close();
+            pcRef.current = null;
         }
         if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(t => t.stop());
+            localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
         }
-        setLocalStream(null);
-        setRemoteStream(null);
-        setCallState("idle");
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: "call:end" }));
-        }
-    }, [wsRef]);
+        setConnectionState('new');
+    }, []);
 
-    const startCall = useCallback(async (roomId: number) => {
-        setCallState("calling");
-        setCallMeta({ target: { id: 0, name: "Room" } });
+    const createPeerConnection = useCallback(() => {
+        const pc = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                onSignal({ type: 'call:signal', candidate: event.candidate });
+            }
+        };
+
+        pc.ontrack = (event) => {
+            onStream(event.streams[0]);
+        };
+
+        pc.onconnectionstatechange = () => {
+            setConnectionState(pc.connectionState);
+        };
+
+        pcRef.current = pc;
+        return pc;
+    }, [onSignal, onStream]);
+
+    const startCall = useCallback(async () => {
+        cleanup();
+        const pc = createPeerConnection();
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            setLocalStream(stream);
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
+                video: false
+            });
             localStreamRef.current = stream;
-
-            const pc = new RTCPeerConnection(ICE_SERVERS);
-            peerConnectionRef.current = pc;
-
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-            pc.onicecandidate = (event) => {
-                if (event.candidate && wsRef.current) {
-                    wsRef.current.send(JSON.stringify({ type: "call:candidate", candidate: event.candidate }));
-                }
-            };
-
-            pc.ontrack = (event) => {
-                setRemoteStream(event.streams[0]);
-            };
 
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-
-            if (wsRef.current) wsRef.current.send(JSON.stringify({ type: "call:invite", sdp: offer }));
+            onSignal({ type: 'call:request', offer });
         } catch (err) {
-            console.error("Failed to start call", err);
-            endCall();
+            console.error('Failed to get local stream', err);
+            cleanup();
         }
-    }, [wsRef, endCall]);
-
-    const acceptCall = useCallback(async () => {
-        setCallState("connected");
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            setLocalStream(stream);
-            localStreamRef.current = stream;
-
-            const pc = peerConnectionRef.current || new RTCPeerConnection(ICE_SERVERS);
-            peerConnectionRef.current = pc;
-
-            stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-            pc.onicecandidate = (event) => {
-                if (event.candidate && wsRef.current) {
-                    wsRef.current.send(JSON.stringify({ type: "call:candidate", candidate: event.candidate }));
-                }
-            };
-
-            pc.ontrack = (event) => {
-                setRemoteStream(event.streams[0]);
-            };
-
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            if (wsRef.current) wsRef.current.send(JSON.stringify({ type: "call:answer", sdp: answer }));
-
-        } catch (err) {
-            console.error("Failed to accept", err);
-            endCall();
-        }
-    }, [wsRef, endCall]);
-
-    const rejectCall = useCallback(() => {
-        if (wsRef.current) wsRef.current.send(JSON.stringify({ type: "call:reject" }));
-        setCallState("idle");
-    }, [wsRef]);
+    }, [createPeerConnection, onSignal, cleanup]);
 
     const handleSignal = useCallback(async (data: any) => {
-        if (data.type === "call:invite") {
-            if (data.senderId === userId) return;
+        if (!pcRef.current && data.type !== 'call:request') return;
 
-            setCallState("incoming");
-            setCallMeta({ caller: { id: data.senderId, name: "Incoming Call" } });
+        if (data.type === 'call:request') {
+            cleanup();
+            const pc = createPeerConnection();
 
-            const pc = new RTCPeerConnection(ICE_SERVERS);
-            peerConnectionRef.current = pc;
-            pc.onicecandidate = (event) => {
-                if (event.candidate && wsRef.current) {
-                    wsRef.current.send(JSON.stringify({ type: "call:candidate", candidate: event.candidate }));
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    },
+                    video: false
+                });
+                localStreamRef.current = stream;
+                stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                onSignal({ type: 'call:answer', answer });
+            } catch (err) {
+                console.error('Failed to answer call', err);
+            }
+        } else if (data.type === 'call:answer') {
+            if (pcRef.current && pcRef.current.signalingState !== 'closed') {
+                try {
+                    await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+                } catch (err) {
+                    console.error('Failed to set remote description:', err);
                 }
-            };
-            pc.ontrack = (event) => {
-                setRemoteStream(event.streams[0]);
-            };
-            await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-
-        } else if (data.type === "call:answer") {
-            if (peerConnectionRef.current) {
-                await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                setCallState("connected");
             }
-        } else if (data.type === "call:candidate") {
-            if (peerConnectionRef.current) {
-                await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else if (data.type === 'call:signal' && data.candidate) {
+            if (pcRef.current && pcRef.current.signalingState !== 'closed' && pcRef.current.remoteDescription) {
+                try {
+                    await pcRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+                } catch (err) {
+                    console.error('Failed to add ICE candidate:', err);
+                }
             }
-        } else if (data.type === "call:end" || data.type === "call:reject") {
-            if (peerConnectionRef.current) {
-                peerConnectionRef.current.close();
-                peerConnectionRef.current = null;
-            }
-            if (localStreamRef.current) {
-                localStreamRef.current.getTracks().forEach(t => t.stop());
-                localStreamRef.current = null;
-            }
-            setLocalStream(null);
-            setRemoteStream(null);
-            setCallState("idle");
         }
-    }, [wsRef, userId]);
+    }, [createPeerConnection, onSignal, cleanup]);
 
-    const toggleMute = useCallback(() => {
-        if (localStreamRef.current) {
-            localStreamRef.current.getAudioTracks().forEach(t => t.enabled = !t.enabled);
-            setIsMuted(!localStreamRef.current.getAudioTracks()[0].enabled);
-        }
-    }, []);
-
-    const toggleVideo = useCallback(() => {
-        if (localStreamRef.current) {
-            localStreamRef.current.getVideoTracks().forEach(t => t.enabled = !t.enabled);
-            setIsVideoOff(!localStreamRef.current.getVideoTracks()[0].enabled);
-        }
-    }, []);
-
-    return {
-        callState,
-        callMeta,
-        localStream,
-        remoteStream,
-        isMuted,
-        isVideoOff,
-        startCall,
-        acceptCall,
-        rejectCall,
-        endCall,
-        handleSignal,
-        toggleMute,
-        toggleVideo
-    };
+    return { startCall, handleSignal, cleanup, connectionState };
 }

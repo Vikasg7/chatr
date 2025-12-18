@@ -14,6 +14,8 @@ import { motion } from 'framer-motion';
 // Hooks
 import { useChat } from "@/hooks/useChat";
 import { useAuthForm } from "@/hooks/useAuthForm";
+import { useWebRTC } from "@/hooks/useWebRTC";
+import { CallOverlay } from "./components/CallOverlay";
 
 export default function ChatPage() {
   const { token, user, hydrated, setUser } = useAuthStore();
@@ -24,6 +26,64 @@ export default function ChatPage() {
 
   // Chat Logic
   const chat = useChat(token, user);
+
+  // WebRTC Logic
+  const webRTC = useWebRTC({
+    onSignal: (data) => {
+      if (chat.wsRef.current) {
+        chat.wsRef.current.send(JSON.stringify({ ...data, friendId: chat.currentFriendId }));
+      }
+    },
+    onStream: (stream) => {
+      chat.setRemoteStream(stream);
+    }
+  });
+
+  useEffect(() => {
+    chat.setSignalHandler((data) => {
+      webRTC.handleSignal(data);
+    });
+  }, [chat, webRTC]);
+
+  const handleStartCall = () => {
+    chat.setCallStatus('RINGING_OUT');
+    webRTC.startCall();
+  };
+
+  const handleEndCall = (duration?: string) => {
+    if (chat.wsRef.current) {
+      chat.wsRef.current.send(JSON.stringify({
+        type: "call:end",
+        friendId: chat.currentFriendId,
+        duration
+      }));
+    }
+    chat.setCallStatus('IDLE');
+    chat.setRemoteStream(null);
+    webRTC.cleanup();
+  };
+
+  const handleRejectCall = () => {
+    if (chat.wsRef.current) {
+      chat.wsRef.current.send(JSON.stringify({ type: "call:reject", friendId: chat.currentFriendId }));
+    }
+    chat.setCallStatus('IDLE');
+    webRTC.cleanup();
+  };
+
+  const handleCancelCall = () => {
+    if (chat.wsRef.current) {
+      chat.wsRef.current.send(JSON.stringify({ type: "call:cancel", friendId: chat.currentFriendId }));
+    }
+    chat.setCallStatus('IDLE');
+    webRTC.cleanup();
+  };
+
+  const handleAnswerCall = () => {
+    // Note: handleSignal(call:request) already handles answering in the hook
+    // This UI trigger just confirms the answer signal will be sent
+    chat.setCallStatus('ACTIVE');
+  };
 
   // Auth Verification
   useEffect(() => {
@@ -178,6 +238,7 @@ export default function ChatPage() {
               typingText={getTypingText()}
               onUnfriend={() => currentFriendship && chat.unfriend(currentFriendship.id)}
               isAccepted={currentFriendship?.status === "ACCEPTED"}
+              onCall={handleStartCall}
             />
 
             <MessageList
@@ -231,6 +292,26 @@ export default function ChatPage() {
         currentUserId={user?.id}
         existingFriendIds={chat.friends.map(f => getFriendUser(f)?.id)}
       />
+
+      <CallOverlay
+        status={chat.callStatus}
+        callerName={currentFriendUser?.name || currentFriendUser?.email.split("@")[0]}
+        onAnswer={handleAnswerCall}
+        onReject={handleRejectCall}
+        onCancel={handleCancelCall}
+        onEnd={handleEndCall}
+      />
+
+      {/* Hidden Remote Audio */}
+      {chat.remoteStream && chat.callStatus === 'ACTIVE' && (
+        <audio
+          autoPlay
+          ref={(audio) => {
+            if (audio) audio.srcObject = chat.remoteStream;
+          }}
+          className="hidden"
+        />
+      )}
     </>
   );
 }

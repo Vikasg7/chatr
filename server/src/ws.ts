@@ -204,6 +204,34 @@ export class WSService {
       } else if (msg.type.startsWith("call:")) {
         if (!client.friendId) return;
         this.broadcastToChat(client.friendId, msg, client.id);
+
+        // Logging Call History
+        if (msg.type === "call:cancel" || msg.type === "call:reject" || msg.type === "call:end") {
+          let summaryText = "";
+          if (msg.type === "call:cancel") summaryText = "Missed Voice Call";
+          else if (msg.type === "call:reject") summaryText = "Declined Voice Call";
+          else if (msg.type === "call:end") {
+            const duration = msg.duration ? ` (${msg.duration})` : "";
+            summaryText = `Voice Call${duration}`;
+          }
+
+          if (summaryText) {
+            await this.prisma.message.create({
+              data: {
+                text: summaryText,
+                senderId: client.userId!,
+                friendId: client.friendId,
+                attachmentType: "CALL_SUMMARY",
+                metadata: { type: msg.type, duration: msg.duration } as any
+              },
+              include: {
+                sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
+              },
+            }).then(message => {
+              this.broadcastToChat(client.friendId!, { type: "message:new", message });
+            });
+          }
+        }
       }
     } catch (err) {
       console.error("WS error:", err);

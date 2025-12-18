@@ -22,6 +22,8 @@ export function useChat(token: string | null, user: any) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
     const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
+    const [callStatus, setCallStatus] = useState<'IDLE' | 'RINGING_OUT' | 'RINGING_IN' | 'ACTIVE'>('IDLE');
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -145,9 +147,6 @@ export function useChat(token: string | null, user: any) {
                 }
                 toastLib.showToast("Friendship removed", "info");
             }
-            else if (data.type.startsWith("call:")) {
-                if (signalHandlerRef.current) signalHandlerRef.current(data);
-            }
             else if (data.type === "typing:start") {
                 setTypingUsers(prev => new Set(prev).add(data.userId));
             }
@@ -157,6 +156,26 @@ export function useChat(token: string | null, user: any) {
                     next.delete(data.userId);
                     return next;
                 });
+            }
+            else if (data.type === "call:request") {
+                if (callStatus !== 'IDLE') {
+                    wsRef.current?.send(JSON.stringify({ type: "call:reject", friendId: currentFriendId }));
+                    return;
+                }
+                setCallStatus('RINGING_IN');
+                if (signalHandlerRef.current) signalHandlerRef.current(data);
+            }
+            else if (data.type === "call:cancel" || data.type === "call:reject" || data.type === "call:end") {
+                setCallStatus('IDLE');
+                setRemoteStream(null);
+                if (signalHandlerRef.current) signalHandlerRef.current(data);
+            }
+            else if (data.type === "call:answer") {
+                setCallStatus('ACTIVE');
+                if (signalHandlerRef.current) signalHandlerRef.current(data);
+            }
+            else if (data.type === "call:signal") {
+                if (signalHandlerRef.current) signalHandlerRef.current(data);
             }
         };
 
@@ -284,6 +303,10 @@ export function useChat(token: string | null, user: any) {
         editMsg,
         deleteMsg,
         handleTyping,
-        setSignalHandler
+        setSignalHandler,
+        callStatus,
+        setCallStatus,
+        remoteStream,
+        setRemoteStream
     };
 }
