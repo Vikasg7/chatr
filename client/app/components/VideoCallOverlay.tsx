@@ -37,12 +37,16 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
     useEffect(() => {
         if (localVideoRef.current && localStream && status === 'ACTIVE') {
             localVideoRef.current.srcObject = localStream;
+        } else if (localVideoRef.current && status !== 'ACTIVE') {
+            localVideoRef.current.srcObject = null;
         }
     }, [localStream, status]);
 
     useEffect(() => {
         if (remoteVideoRef.current && remoteStream && status === 'ACTIVE') {
             remoteVideoRef.current.srcObject = remoteStream;
+        } else if (remoteVideoRef.current && status !== 'ACTIVE') {
+            remoteVideoRef.current.srcObject = null;
         }
     }, [remoteStream, status]);
 
@@ -71,7 +75,7 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
                     className="relative z-[201] bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col items-center gap-6 pointer-events-auto max-w-4xl"
                 >
-                    {status === 'ACTIVE' ? (
+                    {status === 'ACTIVE' && localStream && remoteStream ? (
                         <div className="flex gap-4">
                             {/* Remote Video */}
                             <div className="w-80 h-60 rounded-2xl overflow-hidden bg-slate-950 border border-white/10">
