@@ -75,10 +75,17 @@ export function MsgInput({
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toastLib.showToast("File size must be less than 10MB", "error");
+      e.target.value = "";
+      return;
+    }
+
     e.target.value = "";
     try {
-      const res = await api.uploadFile(file);
-      onSend(res);
+      const res = await api.uploadFile(file); // res is { url, type, name }
+      onSend({ url: res.url, type: res.type, ...res });
     } catch (err: any) {
       toastLib.showToast("Upload failed", "error");
     }

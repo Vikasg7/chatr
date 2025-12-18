@@ -101,7 +101,10 @@ export class WSService {
             text: msg.text || "",
             attachmentUrl: msg.attachmentUrl,
             attachmentType: msg.attachmentType,
-            metadata: metadata as any,
+            metadata: {
+              ...(metadata || {}),
+              attachmentName: msg.attachmentName
+            } as any,
             senderId: client.userId!,
             friendId: client.friendId,
           },

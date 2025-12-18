@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB strictly
 });
 
 router.post("/", upload.single("file"), (req, res) => {
@@ -34,15 +34,24 @@ router.post("/", upload.single("file"), (req, res) => {
     }
 
     const url = `/uploads/${req.file.filename}`;
+    const name = req.file.originalname;
 
-    // Simple type detection
+    // Granular type detection
     let type = "FILE";
     const mime = req.file.mimetype;
+
     if (mime.startsWith("image/")) {
         type = "IMAGE";
+    } else if (mime.startsWith("video/")) {
+        type = "VIDEO";
+    } else if (mime.startsWith("audio/")) {
+        type = "AUDIO";
+    } else if (mime.startsWith("text/") ||
+        /\.(txt|md|js|ts|json|py|html|css|csv)$/i.test(name)) {
+        type = "TEXT";
     }
 
-    res.json({ url, type });
+    res.json({ url, type, name });
 });
 
 export default router;

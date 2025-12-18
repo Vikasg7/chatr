@@ -221,13 +221,14 @@ export function useChat(token: string | null, user: any) {
         }
     }, [currentFriendId]);
 
-    const sendMsg = useCallback((text: string, attachment?: { url: string; type: string }) => {
+    const sendMsg = useCallback((text: string, attachment?: { url: string; type: string; name?: string }) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
         wsRef.current.send(JSON.stringify({
             type: "message:new",
             text,
             attachmentUrl: attachment?.url,
-            attachmentType: attachment?.type
+            attachmentType: attachment?.type,
+            attachmentName: attachment?.name
         }));
     }, []);
 

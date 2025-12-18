@@ -72,10 +72,10 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.15 }}
-                  className={`group flex items-start gap-3 w-full px-4 ${mine ? 'flex-row-reverse pl-20' : 'flex-row pr-20'} ${marginClass}`}
+                  className={`group flex items-start gap-3 w-full ${mine ? 'flex-row-reverse pl-20' : 'flex-row pr-20'} ${marginClass}`}
                 >
                   {/* Time Marker - Only show for first in group */}
-                  <div className={`w-12 flex-shrink-0 text-[10px] text-slate-600 font-medium pt-2 ${mine ? 'text-left' : 'text-right'}`}>
+                  <div className={`w-6 flex-shrink-0 text-[10px] text-slate-600 font-medium pt-2 ${mine ? 'text-left' : 'text-right'}`}>
                     {isFirstInGroup && format.time(m.createdAt)}
                   </div>
 
@@ -95,24 +95,72 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                       </div>
 
                       {/* Attachments */}
+                      {/* Attachments */}
                       {m.attachmentUrl && (
-                        <div className="mt-2">
-                          {m.attachmentType === "IMAGE" ? (
-                            <img
-                              src={`http://localhost:4000${m.attachmentUrl}`}
-                              alt="attachment"
-                              className="max-h-60 rounded-lg border border-white/10 shadow-sm object-cover bg-black/20"
-                            />
-                          ) : (
-                            <a
-                              href={`http://localhost:4000${m.attachmentUrl}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition text-sm ${mine ? 'bg-indigo-700 border-indigo-500 hover:bg-indigo-600' : 'bg-slate-700 border-slate-600 hover:bg-slate-600'}`}
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                              <span>Download Attachment</span>
-                            </a>
+                        <div className="mt-2 space-y-2">
+                          {m.attachmentType === "IMAGE" && (
+                            <div className="relative group/img overflow-hidden rounded-xl border border-white/10 shadow-lg bg-black/20">
+                              <img
+                                src={`http://localhost:4000${m.attachmentUrl}`}
+                                alt="attachment"
+                                className="max-h-[300px] max-w-full object-contain rounded-lg transition-transform duration-500 group-hover/img:scale-105"
+                              />
+                            </div>
+                          )}
+
+                          {m.attachmentType === "VIDEO" && (
+                            <div className="relative overflow-hidden rounded-xl border border-white/10 shadow-lg bg-black/40">
+                              <video
+                                controls
+                                className="max-h-[300px] max-w-full rounded-lg"
+                                src={`http://localhost:4000${m.attachmentUrl}`}
+                              />
+                            </div>
+                          )}
+
+                          {m.attachmentType === "AUDIO" && (
+                            <div className="p-2 rounded-xl border border-white/10 bg-slate-900/50 shadow-inner min-w-[240px]">
+                              <div className="text-[10px] text-slate-500 mb-1 flex items-center gap-1.5 px-1 truncate">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                                {m.metadata?.attachmentName || "Audio clip"}
+                              </div>
+                              <audio
+                                controls
+                                className="w-full h-8"
+                                src={`http://localhost:4000${m.attachmentUrl}`}
+                              />
+                            </div>
+                          )}
+
+                          {(m.attachmentType === "FILE" || m.attachmentType === "TEXT") && (
+                            <div className={`group/file flex flex-col gap-2 p-3 rounded-xl border transition-all ${mine ? 'bg-indigo-700/50 border-indigo-400/30 hover:bg-indigo-600/50' : 'bg-slate-900 border-slate-700 hover:bg-slate-800'}`}>
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${mine ? 'bg-indigo-600' : 'bg-slate-800'}`}>
+                                  {m.attachmentType === "TEXT" ? (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                  ) : (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-semibold truncate text-slate-100 italic">
+                                    {m.metadata?.attachmentName || "Download file"}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider opacity-60">
+                                    {m.attachmentType}
+                                  </div>
+                                </div>
+                              </div>
+                              <a
+                                href={`http://localhost:4000${m.attachmentUrl}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center justify-center gap-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${mine ? 'bg-indigo-500 hover:bg-indigo-400 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-100'}`}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                DOWNLOAD
+                              </a>
+                            </div>
                           )}
                         </div>
                       )}
