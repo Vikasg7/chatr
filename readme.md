@@ -41,3 +41,6 @@ Chatr is a real-time chat application built with Next.js, React, and WebSockets.
 - Register a new account or log in with existing credentials.
 - Create or join chat rooms to start messaging.
 - Use the direct messaging feature to chat privately with other users.
+
+## TODO
+- [ ] if the user is offline.. Voice/Video call shouldn't happen
