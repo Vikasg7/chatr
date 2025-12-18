@@ -104,9 +104,9 @@ export default function ChatPage() {
     webRTC.cleanup();
   };
 
-  const handleAnswerCall = () => {
-    // Note: handleSignal(call:request) already handles answering in the hook
-    // This UI trigger just confirms the answer signal will be sent
+  const handleAnswerCall = async () => {
+    // Call the answerCall function which gets media and sends answer
+    await webRTC.answerCall();
     chat.setCallStatus('ACTIVE');
   };
 

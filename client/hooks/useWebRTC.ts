@@ -9,6 +9,8 @@ interface UseWebRTCProps {
 export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps) {
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
+    const pendingOfferRef = useRef<any>(null);
+    const pendingCandidatesRef = useRef<any[]>([]);
     const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
 
     const cleanup = useCallback(() => {
@@ -20,6 +22,8 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
         }
+        pendingOfferRef.current = null;
+        pendingCandidatesRef.current = [];
         setConnectionState('new');
     }, []);
 
@@ -75,37 +79,69 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         }
     }, [createPeerConnection, onSignal, cleanup]);
 
+    const answerCall = useCallback(async () => {
+        if (!pendingOfferRef.current) {
+            console.error('No pending offer to answer');
+            return;
+        }
+
+        // Save pending data before cleanup clears it
+        const savedOffer = pendingOfferRef.current;
+        const savedCandidates = [...pendingCandidatesRef.current];
+
+        cleanup();
+        const pc = createPeerConnection();
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
+                video: video ? {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                } : false
+            });
+            localStreamRef.current = stream;
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+            await pc.setRemoteDescription(new RTCSessionDescription(savedOffer));
+
+            // Process any queued ICE candidates
+            for (const candidate of savedCandidates) {
+                try {
+                    await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (err) {
+                    console.error('Failed to add queued ICE candidate:', err);
+                }
+            }
+            pendingCandidatesRef.current = [];
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            onSignal({ type: 'call:answer', answer });
+
+            // Clear pending offer
+            pendingOfferRef.current = null;
+        } catch (err) {
+            console.error('Failed to answer call', err);
+            cleanup();
+        }
+    }, [createPeerConnection, onSignal, cleanup, video]);
+
     const handleSignal = useCallback(async (data: any) => {
+        if (data.type === 'call:request') {
+            // Store the offer but don't get media yet - wait for user to accept
+            pendingOfferRef.current = data.offer;
+            return;
+        }
+
         if (!pcRef.current && data.type !== 'call:request') return;
 
-        if (data.type === 'call:request') {
-            cleanup();
-            const pc = createPeerConnection();
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true,
-                    },
-                    video: video ? {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: 'user'
-                    } : false
-                });
-                localStreamRef.current = stream;
-                stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                onSignal({ type: 'call:answer', answer });
-            } catch (err) {
-                console.error('Failed to answer call', err);
-            }
-        } else if (data.type === 'call:answer') {
+        if (data.type === 'call:answer') {
             if (pcRef.current && pcRef.current.signalingState !== 'closed') {
                 try {
                     await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
@@ -120,9 +156,16 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
                 } catch (err) {
                     console.error('Failed to add ICE candidate:', err);
                 }
+            } else if (pendingOfferRef.current) {
+                // Queue candidates if we have a pending offer but no peer connection yet
+                pendingCandidatesRef.current.push(data.candidate);
             }
+        } else if (data.type === 'call:cancel' || data.type === 'call:reject' || data.type === 'call:end') {
+            // Clear any pending data if call is cancelled/rejected/ended
+            pendingOfferRef.current = null;
+            pendingCandidatesRef.current = [];
         }
-    }, [createPeerConnection, onSignal, cleanup]);
+    }, []);
 
     const toggleAudio = useCallback(() => {
         if (localStreamRef.current) {
@@ -146,5 +189,5 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         return true;
     }, []);
 
-    return { startCall, handleSignal, cleanup, connectionState, localStream: localStreamRef.current, toggleAudio, toggleVideo };
+    return { startCall, answerCall, handleSignal, cleanup, connectionState, localStream: localStreamRef.current, toggleAudio, toggleVideo };
 }
