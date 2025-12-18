@@ -94,6 +94,11 @@ export default function ChatPage() {
         const me = await api.get("/auth/me");
         if (me) setUser(me);
         setReady(true);
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+          await Notification.requestPermission();
+        }
       } catch (err) { }
     })();
   }, [token, hydrated, setUser]);

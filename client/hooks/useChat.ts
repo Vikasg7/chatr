@@ -106,6 +106,30 @@ export function useChat(token: string | null, user: any) {
 
             if (data.type === "message:new") {
                 addMsg(data.message);
+
+                // Show browser notification for new messages
+                if (data.message.sender.id !== user?.id) {
+                    const shouldNotify = !document.hasFocus() || data.message.friendId !== currentFriendId;
+
+                    if (shouldNotify && Notification.permission === 'granted') {
+                        const senderName = data.message.sender.name || data.message.sender.email.split('@')[0];
+                        const messageText = data.message.text || (data.message.attachmentType ? `Sent ${data.message.attachmentType.toLowerCase()}` : 'New message');
+
+                        const notification = new Notification(`${senderName}`, {
+                            body: messageText,
+                            icon: data.message.sender.avatarUrl || '/icon.png',
+                            tag: `msg-${data.message.id}`,
+                            requireInteraction: false
+                        });
+
+                        notification.onclick = () => {
+                            window.focus();
+                            notification.close();
+                        };
+
+                        setTimeout(() => notification.close(), 5000);
+                    }
+                }
             }
             else if (data.type === "status:list") setOnlineUsers(new Set(data.users));
             else if (data.type === "status:online") setOnlineUsers(prev => new Set(prev).add(data.userId));
