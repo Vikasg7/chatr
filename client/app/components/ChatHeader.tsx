@@ -1,5 +1,7 @@
 "use client";
 
+import { Phone, Video, UserMinus, Plus } from "lucide-react";
+
 interface ChatHeaderProps {
   connected: boolean;
   roomName: string;
@@ -16,65 +18,71 @@ export function ChatHeader({ connected, roomName, subtitle, onInvite, onUnfriend
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80">
       <div>
-        <div className="text-h6">{roomName}</div>
+        <div className="text-h6 font-bold tracking-tight text-slate-100">{roomName}</div>
         {typingText ? (
-          <div className="text-xs text-indigo-400 font-medium animate-pulse">{typingText}</div>
+          <div className="text-xs text-indigo-400 font-semibold animate-pulse">{typingText}</div>
         ) : subtitle && (
-          <div className="text-xs text-slate-400 prose-constrained">{subtitle}</div>
+          <div className="text-xs text-slate-400 prose-constrained font-medium">{subtitle}</div>
         )}
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-slate-400">
-        <span
-          className={`inline-flex h-2.5 w-2.5 rounded-full ${connected ? "bg-emerald-400" : "bg-red-500"
-            }`}
-        />
-        {connected ? "Connected" : "Reconnecting..."}
+      <div className="flex items-center gap-4 text-xs">
+        <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900/50 border border-slate-800">
+          <span
+            className={`inline-flex h-2 w-2 rounded-full ${connected ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+              }`}
+          />
+          <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+            {connected ? "Live" : "Offline"}
+          </span>
+        </div>
 
         {onCall && (
           <div className="flex items-center gap-1">
             <button
               onClick={onCall}
-              className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-full transition"
+              className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50 rounded-xl transition-all"
               title="Start Audio Call"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-              </svg>
+              <Phone size={20} />
             </button>
             <button
               onClick={onVideoCall}
-              className={`p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-full transition ${!onVideoCall ? 'cursor-not-allowed opacity-40' : ''}`}
+              className={`p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50 rounded-xl transition-all ${!onVideoCall ? 'cursor-not-allowed opacity-40' : ''}`}
               title={onVideoCall ? "Start Video Call" : "Video call coming soon"}
               disabled={!onVideoCall}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+              <Video size={20} />
             </button>
           </div>
         )}
 
-        {onUnfriend && isAccepted && (
-          <button
-            onClick={() => {
-              if (confirm("Are you sure you want to unfriend this user?")) {
-                onUnfriend();
-              }
-            }}
-            className="text-red-400 hover:text-red-300 font-medium transition-colors ml-2 text-xs"
-            title="Unfriend"
-          >
-            Unfriend
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onUnfriend && isAccepted && (
+            <button
+              onClick={() => {
+                if (confirm("Are you sure you want to unfriend this user?")) {
+                  onUnfriend();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 font-bold transition-all text-[11px] uppercase tracking-wide border border-transparent hover:border-rose-500/20"
+              title="Unfriend"
+            >
+              <UserMinus size={14} />
+              Unfriend
+            </button>
+          )}
 
-        {onInvite && (
-          <button
-            onClick={onInvite}
-            className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors ml-2"
-          >
-            + Invite
-          </button>
-        )}
+          {onInvite && (
+            <button
+              onClick={onInvite}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 font-bold transition-all text-[11px] uppercase tracking-wide border border-transparent hover:border-indigo-500/20"
+            >
+              <Plus size={14} />
+              Invite
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

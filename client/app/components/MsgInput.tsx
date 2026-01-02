@@ -1,5 +1,6 @@
 "use client";
 import { useRef } from "react";
+import { Paperclip, Send, Check, UserPlus, X, Edit2 } from "lucide-react";
 import * as api from "@/lib/api";
 import toastLib from "@/lib/toast";
 
@@ -11,7 +12,6 @@ interface MsgInputProps {
   disabled?: boolean;
   isEditing?: boolean;
   onCancelEdit?: () => void;
-  // New props for gating
   friendshipStatus?: string;
   isSender?: boolean;
   onSendRequest?: () => void;
@@ -37,27 +37,29 @@ export function MsgInput({
     return (
       <div className="px-4 py-8 border-t border-slate-800 bg-slate-950/90 text-center">
         {friendshipStatus === "PENDING" ? (
-          <div>
-            <p className="text-slate-400 text-sm mb-4">
-              {isSender ? "Friend request sent. Waiting for response..." : "This user wants to be friends!"}
+          <div className="flex flex-col items-center">
+            <p className="text-slate-400 text-sm mb-4 font-medium italic">
+              {isSender ? "Friend request sent. Waiting for response..." : "This user wants to connect!"}
             </p>
             {!isSender && (
               <button
                 onClick={onAcceptRequest}
-                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition"
+                className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition shadow-lg shadow-emerald-900/20 active:scale-95"
               >
+                <Check size={18} />
                 Accept Friend Request
               </button>
             )}
           </div>
         ) : (
-          <div>
-            <p className="text-slate-400 text-sm mb-4">You are not friends with this user yet.</p>
+          <div className="flex flex-col items-center">
+            <p className="text-slate-400 text-sm mb-4 font-medium italic">You are not friends with this user yet.</p>
             <button
               onClick={onSendRequest}
-              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition"
+              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-lg shadow-indigo-900/20 active:scale-95"
             >
-              Send Friend Request?
+              <UserPlus size={18} />
+              Send Friend Request
             </button>
           </div>
         )}
@@ -68,7 +70,7 @@ export function MsgInput({
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      onSend();
+      if (value.trim()) onSend();
     }
   }
 
@@ -84,7 +86,7 @@ export function MsgInput({
 
     e.target.value = "";
     try {
-      const res = await api.uploadFile(file); // res is { url, type, name }
+      const res = await api.uploadFile(file);
       onSend({ url: res.url, type: res.type, ...res });
     } catch (err: any) {
       toastLib.showToast("Upload failed", "error");
@@ -96,13 +98,11 @@ export function MsgInput({
       <div className="flex items-center gap-3">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="text-slate-400 hover:text-indigo-400 transition"
+          className="p-2 text-slate-400 hover:text-indigo-400 transition hover:bg-indigo-500/10 rounded-xl"
           disabled={disabled}
           title="Attach file"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-          </svg>
+          <Paperclip size={20} />
         </button>
         <input
           type="file"
@@ -111,9 +111,9 @@ export function MsgInput({
           onChange={handleFileSelect}
         />
 
-        <div className="flex-1 input-wrap flex items-center shadow-sm">
+        <div className="flex-1 input-wrap flex items-center shadow-inner group-focus-within:border-indigo-500/50 transition-all">
           <input
-            className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-500"
+            className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-500 h-10"
             value={value}
             onChange={(e) => {
               onChange(e.target.value);
@@ -124,17 +124,42 @@ export function MsgInput({
             onKeyDown={handleKeyDown}
           />
         </div>
-        <button
-          onClick={() => onSend()}
-          className={`btn-primary ${isEditing ? 'bg-emerald-600 hover:bg-emerald-500' : ''}`}
-          disabled={disabled || !value.trim()}
-          aria-disabled={disabled || !value.trim()}
-        >
-          {isEditing ? "Update" : "Send"}
-        </button>
-        {isEditing && (
-          <button onClick={onCancelEdit} className="text-slate-400 hover:text-white px-2 text-sm">Cancel</button>
-        )}
+
+        <div className="flex items-center gap-2">
+          {isEditing && (
+            <button
+              onClick={onCancelEdit}
+              className="flex items-center justify-center p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition"
+              title="Cancel editing"
+            >
+              <X size={20} />
+            </button>
+          )}
+          <button
+            onClick={() => onSend()}
+            className={`
+              flex items-center justify-center gap-2 px-5 h-10 rounded-xl font-bold transition shadow-lg active:scale-95
+              ${isEditing
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20'
+                : 'btn-primary shadow-indigo-900/20'
+              }
+              disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100
+            `}
+            disabled={disabled || !value.trim()}
+          >
+            {isEditing ? (
+              <>
+                <Edit2 size={16} />
+                <span>Update</span>
+              </>
+            ) : (
+              <>
+                <span>Send</span>
+                <Send size={16} />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

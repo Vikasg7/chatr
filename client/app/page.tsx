@@ -11,6 +11,7 @@ import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
 import { SearchUserModal } from "./components/SearchUserModal";
 import { motion } from 'framer-motion';
+import { LogIn, UserPlus, LogOut, UserMinus, Send, Search, User, Mail, Lock, Sparkles, Users, Plus, X } from 'lucide-react';
 
 // Hooks
 import { useChat } from "@/hooks/useChat";
@@ -184,7 +185,7 @@ export default function ChatPage() {
   };
 
   // Layout State
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [showSearchModal, setShowSearchModal] = useState(false);
 
   const currentFriendship = chat.friends.find(f =>
@@ -234,31 +235,94 @@ export default function ChatPage() {
 
   // Auth Screen
   if (!token) {
+    const handleAuthSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (auth.loading) return;
+      auth.mode === "login" ? auth.login() : auth.signup();
+    };
+
     return (
       <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-6">
         <div className="w-full max-w-6xl grid grid-cols-2 gap-8 items-center">
           <div className="text-left relative">
             <div className="absolute -left-10 -top-10 w-56 h-56 rounded-full bg-gradient-to-br from-indigo-700/30 to-blue-400/20 blur-3xl opacity-40 pointer-events-none" />
             <motion.h1 initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.36 }} className="text-5xl font-extrabold text-slate-100 mb-4">Chatr</motion.h1>
-            <p className="text-slate-300 prose-constrained mb-6">Connect with friends — messages sync in real time.</p>
-            <button onClick={() => { auth.setMode("login"); auth.setEmail("demo@chatr.local"); auth.setPassword("password"); auth.login({ email: "demo@chatr.local", password: "password" }); }} className="rounded-full bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow">Try demo</button>
+            <p className="text-slate-300 prose-constrained mb-6 font-medium">Connect with friends — messages sync in real time.</p>
+            <button
+              onClick={() => { auth.setMode("login"); auth.setEmail("demo@chatr.local"); auth.setPassword("password"); auth.login({ email: "demo@chatr.local", password: "password" }); }}
+              className="rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-100 shadow-xl transition-all flex items-center gap-2 group"
+            >
+              <Sparkles size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+              Try demo
+            </button>
           </div>
 
-          <div className="w-full max-w-md mx-auto card">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-100">{auth.mode === "login" ? "Sign in" : "Create account"}</h2>
-              <button className="underline text-sm text-slate-400" onClick={() => auth.setMode(auth.mode === "login" ? "signup" : "login")}>{auth.mode === "login" ? "Create account" : "Sign in"}</button>
+          <div className="w-full max-w-md mx-auto card relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50" />
+
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-slate-100">{auth.mode === "login" ? "Sign in" : "Create account"}</h2>
+              <button
+                className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                onClick={() => auth.setMode(auth.mode === "login" ? "signup" : "login")}
+              >
+                {auth.mode === "login" ? "Create an account" : "Back to login"}
+              </button>
             </div>
 
-            {auth.mode === "signup" && (
-              <input className="input w-full mb-3" placeholder="Full Name" value={auth.name} onChange={e => auth.setName(e.target.value)} />
-            )}
-            <input className="input w-full mb-3" placeholder="Email" value={auth.email} onChange={e => auth.setEmail(e.target.value)} />
-            <input type="password" className="input w-full mb-4" placeholder="Password" value={auth.password} onChange={e => auth.setPassword(e.target.value)} />
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              {auth.mode === "signup" && (
+                <div className="relative group/input">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={18} />
+                  <input
+                    className="input w-full !pl-10 h-11 bg-slate-900/50 border-slate-700/50 focus:border-indigo-500 focus:bg-slate-900 transition-all font-medium"
+                    placeholder="Full Name"
+                    value={auth.name}
+                    onChange={e => auth.setName(e.target.value)}
+                    required={auth.mode === "signup"}
+                  />
+                </div>
+              )}
 
-            <button disabled={auth.loading} onClick={() => auth.mode === "login" ? auth.login() : auth.signup()} className="btn-primary w-full">
-              {auth.loading ? "Processing..." : (auth.mode === "login" ? "Sign in" : "Create account")}
-            </button>
+              <div className="relative group/input">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={18} />
+                <input
+                  type="email"
+                  className="input w-full !pl-10 h-11 bg-slate-900/50 border-slate-700/50 focus:border-indigo-500 focus:bg-slate-900 transition-all font-medium"
+                  placeholder="Email address"
+                  value={auth.email}
+                  onChange={e => auth.setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="relative group/input">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={18} />
+                <input
+                  type="password"
+                  className="input w-full !pl-10 h-11 bg-slate-900/50 border-slate-700/50 focus:border-indigo-500 focus:bg-slate-900 transition-all font-medium"
+                  placeholder="Password"
+                  value={auth.password}
+                  onChange={e => auth.setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={auth.loading}
+                className="btn-primary w-full h-11 font-bold tracking-tight shadow-xl shadow-indigo-900/20 flex items-center justify-center gap-2 group/btn"
+              >
+                {auth.loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    {auth.mode === "login" ? <LogIn size={18} className="group-hover:translate-x-0.5 transition-transform" /> : <UserPlus size={18} className="group-hover:translate-x-0.5 transition-transform" />}
+                    {auth.mode === "login" ? "Sign in" : "Create account"}
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         </div>
       </main>
@@ -270,33 +334,48 @@ export default function ChatPage() {
       <GlobalHeader onMenuClick={() => setShowSidebar(true)} />
 
       <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col relative">
-        <div className="flex flex-1 overflow-hidden relative">
+        <div
+          onClick={() => { if (showSidebar) setShowSidebar(false); }}
+          className="flex flex-1 overflow-hidden relative h-full"
+        >
 
           {/* Sidebar */}
-          <aside className={`w-64 border-r border-slate-800 bg-slate-950 px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 md:relative md:translate-x-0 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="mb-4 flex justify-between items-center">
-              <h2 className="sidebar-heading">Friends</h2>
-              <button
-                onClick={() => setShowSearchModal(true)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all text-xl font-bold"
-                title="Start New Conversation"
-              >+</button>
-            </div>
+          <aside
+            onClick={(e) => e.stopPropagation()}
+            className={`w-72 border-r border-slate-800 bg-slate-950 px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-all duration-300 md:relative ${showSidebar ? 'translate-x-0' : '-translate-x-full md:ml-[-288px]'}`}
+          >
+            <div className="flex flex-col h-full">
+              <div className="mb-6 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Users size={18} className="text-indigo-400" />
+                  <h2 className="sidebar-heading">Friends</h2>
+                </div>
+                <button
+                  onClick={() => setShowSearchModal(true)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all"
+                  title="Search Users"
+                ><Plus size={20} /></button>
+              </div>
 
-            <FriendList
-              friends={chat.friends}
-              currentFriendId={chat.currentFriendId}
-              onSelect={(id) => { chat.selectFriend(id); setShowSidebar(false); }}
-              currentUserId={user?.id}
-              onlineUsers={chat.onlineUsers}
-            />
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <FriendList
+                  friends={chat.friends}
+                  currentFriendId={chat.currentFriendId}
+                  onSelect={(id) => { chat.selectFriend(id); setShowSidebar(false); }}
+                  currentUserId={user?.id}
+                  onlineUsers={chat.onlineUsers}
+                />
+              </div>
 
-            <div className="pt-3 border-t border-slate-800 meta-small mt-auto">
-              Connected as <span className="font-medium">{user?.email}</span>
+              <div className="pt-3 border-t border-slate-800 meta-small mt-auto">
+                Connected as <span className="font-medium text-slate-400">{user?.email}</span>
+              </div>
             </div>
           </aside>
 
-          <section className="flex-1 flex flex-col relative min-w-0">
+          <section
+            className={`flex-1 flex flex-col relative min-w-0 transition-opacity duration-300 ${showSidebar ? 'opacity-50 md:opacity-100' : 'opacity-100'}`}
+          >
             <ChatHeader
               connected={chat.connected}
               roomName={selectedUser ? (selectedUser.name || selectedUser.email.split("@")[0]) : "Select a friend"}
