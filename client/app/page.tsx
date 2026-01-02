@@ -64,7 +64,7 @@ export default function ChatPage() {
   const handleStartVideoCall = () => {
     chat.setCallType('video');
     chat.setCallStatus('RINGING_OUT');
-    webRTC.startCall();
+    webRTC.startCall(true);
     // Send call type to peer
     if (chat.wsRef.current) {
       chat.wsRef.current.send(JSON.stringify({
@@ -106,7 +106,7 @@ export default function ChatPage() {
 
   const handleAnswerCall = async () => {
     // Call the answerCall function which gets media and sends answer
-    await webRTC.answerCall();
+    await webRTC.answerCall(chat.callType === 'video');
     chat.setCallStatus('ACTIVE');
   };
 

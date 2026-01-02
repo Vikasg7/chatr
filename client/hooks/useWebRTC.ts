@@ -7,12 +7,19 @@ interface UseWebRTCProps {
 }
 
 export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps) {
+    const onSignalRef = useRef(onSignal);
+    const onStreamRef = useRef(onStream);
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const pendingOfferRef = useRef<any>(null);
     const pendingCandidatesRef = useRef<any[]>([]);
     const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
+
+    useEffect(() => {
+        onSignalRef.current = onSignal;
+        onStreamRef.current = onStream;
+    }, [onSignal, onStream]);
 
     const cleanup = useCallback(() => {
         if (pcRef.current) {
@@ -36,12 +43,12 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
 
         pc.onicecandidate = (event) => {
             if (event.candidate) {
-                onSignal({ type: 'call:signal', candidate: event.candidate });
+                onSignalRef.current({ type: 'call:signal', candidate: event.candidate });
             }
         };
 
         pc.ontrack = (event) => {
-            onStream(event.streams[0]);
+            onStreamRef.current(event.streams[0]);
         };
 
         pc.onconnectionstatechange = () => {
@@ -52,9 +59,10 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         return pc;
     }, [onSignal, onStream]);
 
-    const startCall = useCallback(async () => {
+    const startCall = useCallback(async (isVideoIntent?: boolean) => {
         cleanup();
         const pc = createPeerConnection();
+        const isVideo = isVideoIntent ?? video;
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -63,7 +71,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
                     noiseSuppression: true,
                     autoGainControl: true,
                 },
-                video: video ? {
+                video: isVideo ? {
                     width: { ideal: 1280 },
                     height: { ideal: 720 },
                     facingMode: 'user'
@@ -75,14 +83,14 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
 
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
-            onSignal({ type: 'call:request', offer });
+            onSignalRef.current({ type: 'call:request', offer });
         } catch (err) {
             console.error('Failed to get local stream', err);
             cleanup();
         }
-    }, [createPeerConnection, onSignal, cleanup]);
+    }, [createPeerConnection, cleanup, video]);
 
-    const answerCall = useCallback(async () => {
+    const answerCall = useCallback(async (isVideoIntent?: boolean) => {
         if (!pendingOfferRef.current) {
             console.error('No pending offer to answer');
             return;
@@ -91,6 +99,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         // Save pending data before cleanup clears it
         const savedOffer = pendingOfferRef.current;
         const savedCandidates = [...pendingCandidatesRef.current];
+        const isVideo = isVideoIntent ?? video;
 
         cleanup();
         const pc = createPeerConnection();
@@ -102,7 +111,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
                     noiseSuppression: true,
                     autoGainControl: true,
                 },
-                video: video ? {
+                video: isVideo ? {
                     width: { ideal: 1280 },
                     height: { ideal: 720 },
                     facingMode: 'user'
@@ -126,7 +135,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
 
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            onSignal({ type: 'call:answer', answer });
+            onSignalRef.current({ type: 'call:answer', answer });
 
             // Clear pending offer
             pendingOfferRef.current = null;
@@ -134,7 +143,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
             console.error('Failed to answer call', err);
             cleanup();
         }
-    }, [createPeerConnection, onSignal, cleanup, video]);
+    }, [createPeerConnection, cleanup, video]);
 
     const handleSignal = useCallback(async (data: any) => {
         if (data.type === 'call:request') {
@@ -143,7 +152,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
             return;
         }
 
-        if (!pcRef.current && data.type !== 'call:request') return;
+        if (!pcRef.current && data.type !== 'call:request' && data.type !== 'call:signal') return;
 
         if (data.type === 'call:answer') {
             if (pcRef.current && pcRef.current.signalingState !== 'closed') {
@@ -171,12 +180,12 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         }
 
         if (data.type === 'call:signal' && data.candidate) {
-            if (!pcRef.current || pcRef.current.signalingState === 'closed') {
+            if (pcRef.current && pcRef.current.signalingState === 'closed') {
                 return;
             }
 
-            // ✅ ALWAYS buffer if remoteDescription not set yet
-            if (pcRef.current.remoteDescription) {
+            // ✅ ALWAYS buffer if remoteDescription not set yet OR peer connection doesn't exist yet
+            if (pcRef.current && pcRef.current.remoteDescription) {
                 try {
                     await pcRef.current.addIceCandidate(
                         new RTCIceCandidate(data.candidate)
