@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/stores/auth";
 import GlobalHeader from "./components/GlobalHeader";
 import * as api from "@/lib/api";
@@ -46,6 +46,34 @@ export default function ChatPage() {
     },
     video: chat.callType === 'video'
   });
+
+  const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (chat.callStatus === 'RINGING_OUT') {
+      const audio = new Audio('/outgoing.mp3');
+      audio.loop = true;
+      audio.play().catch(e => console.error("Audio play failed:", e));
+      ringtoneRef.current = audio;
+    } else if (chat.callStatus === 'RINGING_IN') {
+      const audio = new Audio('/incoming.mp3');
+      audio.loop = true;
+      audio.play().catch(e => console.error("Audio play failed:", e));
+      ringtoneRef.current = audio;
+    } else {
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current = null;
+      }
+    }
+
+    return () => {
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current = null;
+      }
+    };
+  }, [chat.callStatus]);
 
   useEffect(() => {
     chat.setSignalHandler((data) => {
