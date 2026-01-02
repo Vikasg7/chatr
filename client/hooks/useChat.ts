@@ -205,6 +205,10 @@ export function useChat(token: string | null, user: any) {
             else if (data.type === "call:signal") {
                 if (signalHandlerRef.current) signalHandlerRef.current(data);
             }
+            else if (data.type === "call:error") {
+                setCallStatus('IDLE');
+                if (signalHandlerRef.current) signalHandlerRef.current(data);
+            }
         };
 
         ws.onclose = () => setConnected(false);

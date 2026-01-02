@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/stores/auth";
 import GlobalHeader from "./components/GlobalHeader";
 import * as api from "@/lib/api";
+import toastLib from "@/lib/toast";
 import { FriendList } from "./components/FriendList";
 import { ChatHeader } from "./components/ChatHeader";
 import { MessageList } from "./components/MsgList";
@@ -38,6 +39,11 @@ export default function ChatPage() {
     onStream: (stream) => {
       chat.setRemoteStream(stream);
     },
+    onError: (msg) => {
+      const name = currentFriendUser?.name || currentFriendUser?.email.split("@")[0] || "User";
+      toastLib.showToast(`${name} is offline`, "error");
+      chat.setCallStatus('IDLE');
+    },
     video: chat.callType === 'video'
   });
 
@@ -48,9 +54,10 @@ export default function ChatPage() {
   }, [chat, webRTC]);
 
   const handleStartCall = () => {
+    if (!currentFriendUser) return;
     chat.setCallType('audio');
     chat.setCallStatus('RINGING_OUT');
-    webRTC.startCall();
+    webRTC.startCall(currentFriendUser.id);
     // Send call type to peer
     if (chat.wsRef.current) {
       chat.wsRef.current.send(JSON.stringify({
@@ -62,9 +69,10 @@ export default function ChatPage() {
   };
 
   const handleStartVideoCall = () => {
+    if (!currentFriendUser) return;
     chat.setCallType('video');
     chat.setCallStatus('RINGING_OUT');
-    webRTC.startCall(true);
+    webRTC.startCall(currentFriendUser.id, true);
     // Send call type to peer
     if (chat.wsRef.current) {
       chat.wsRef.current.send(JSON.stringify({

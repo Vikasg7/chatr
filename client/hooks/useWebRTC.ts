@@ -3,12 +3,14 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 interface UseWebRTCProps {
     onSignal: (data: any) => void;
     onStream: (stream: MediaStream) => void;
+    onError?: (message: string) => void;
     video?: boolean;
 }
 
-export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps) {
+export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWebRTCProps) {
     const onSignalRef = useRef(onSignal);
     const onStreamRef = useRef(onStream);
+    const onErrorRef = useRef(onError);
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -19,7 +21,8 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
     useEffect(() => {
         onSignalRef.current = onSignal;
         onStreamRef.current = onStream;
-    }, [onSignal, onStream]);
+        onErrorRef.current = onError;
+    }, [onSignal, onStream, onError]);
 
     const cleanup = useCallback(() => {
         if (pcRef.current) {
@@ -35,6 +38,16 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         pendingCandidatesRef.current = [];
         setConnectionState('new');
     }, []);
+
+    const mangleSdp = (sdp: string) => {
+        // Force high-quality Opus bitrate (default is ~32kbps, we want ~128kbps)
+        return sdp.replace(/a=fmtp:(\d+) (.*)/g, (match, pt, params) => {
+            if (params.includes('opus')) {
+                return `${match};stereo=1;sprop-stereo=1;maxaveragebitrate=128000;useinbandfec=1`;
+            }
+            return match;
+        });
+    };
 
     const createPeerConnection = useCallback(() => {
         const pc = new RTCPeerConnection({
@@ -59,7 +72,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         return pc;
     }, [onSignal, onStream]);
 
-    const startCall = useCallback(async (isVideoIntent?: boolean) => {
+    const startCall = useCallback(async (targetUserId: number, isVideoIntent?: boolean) => {
         cleanup();
         const pc = createPeerConnection();
         const isVideo = isVideoIntent ?? video;
@@ -70,6 +83,8 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
                     echoCancellation: true,
                     noiseSuppression: true,
                     autoGainControl: true,
+                    sampleRate: 48000,
+                    channelCount: 1, // Mono is usually better for voice to avoid phase issues unless needed
                 },
                 video: isVideo ? {
                     width: { ideal: 1280 },
@@ -82,13 +97,14 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
             const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            onSignalRef.current({ type: 'call:request', offer });
+            const mangledOffer = { ...offer, sdp: mangleSdp(offer.sdp || '') };
+            await pc.setLocalDescription(mangledOffer);
+            onSignalRef.current({ type: 'call:request', offer: mangledOffer, targetUserId });
         } catch (err) {
             console.error('Failed to get local stream', err);
             cleanup();
         }
-    }, [createPeerConnection, cleanup, video]);
+    }, [createPeerConnection, cleanup, video, mangleSdp]);
 
     const answerCall = useCallback(async (isVideoIntent?: boolean) => {
         if (!pendingOfferRef.current) {
@@ -110,6 +126,8 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
                     echoCancellation: true,
                     noiseSuppression: true,
                     autoGainControl: true,
+                    sampleRate: 48000,
+                    channelCount: 1,
                 },
                 video: isVideo ? {
                     width: { ideal: 1280 },
@@ -134,8 +152,9 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
             pendingCandidatesRef.current = [];
 
             const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            onSignalRef.current({ type: 'call:answer', answer });
+            const mangledAnswer = { ...answer, sdp: mangleSdp(answer.sdp || '') };
+            await pc.setLocalDescription(mangledAnswer);
+            onSignalRef.current({ type: 'call:answer', answer: mangledAnswer });
 
             // Clear pending offer
             pendingOfferRef.current = null;
@@ -143,12 +162,18 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
             console.error('Failed to answer call', err);
             cleanup();
         }
-    }, [createPeerConnection, cleanup, video]);
+    }, [createPeerConnection, cleanup, video, mangleSdp]);
 
     const handleSignal = useCallback(async (data: any) => {
         if (data.type === 'call:request') {
             // Store the offer but don't get media yet - wait for user to accept
             pendingOfferRef.current = data.offer;
+            return;
+        }
+
+        if (data.type === 'call:error') {
+            if (onErrorRef.current) onErrorRef.current(data.error);
+            cleanup();
             return;
         }
 

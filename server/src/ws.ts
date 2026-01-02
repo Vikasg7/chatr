@@ -203,6 +203,22 @@ export class WSService {
         });
       } else if (msg.type.startsWith("call:")) {
         if (!client.friendId) return;
+
+        // Offline check only on the initial request
+        if (msg.type === "call:request") {
+          const targetUserId = msg.targetUserId;
+          const isOnline = Array.from(this.clients.values()).some(c => c.userId === targetUserId);
+
+          if (!isOnline) {
+            return client.socket.send(JSON.stringify({
+              type: "call:error",
+              error: "User is offline",
+              friendId: client.friendId
+            }));
+          }
+        }
+
+        // Always broadcast call signals to the recipient
         this.broadcastToChat(client.friendId, msg, client.id);
 
         // Logging Call History
