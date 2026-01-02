@@ -1,6 +1,8 @@
 import { useAuthStore } from "@/stores/auth";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const serverHost = process.env.NEXT_PUBLIC_SERVER_HOST || "localhost:4000";
+const protocol = serverHost.includes("localhost") ? "http" : "https";
+export const API_BASE = `${protocol}://${serverHost}/api`;
 
 async function request(method: string, path: string, body?: any) {
   const token = useAuthStore.getState().token;

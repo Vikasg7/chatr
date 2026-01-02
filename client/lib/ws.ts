@@ -1,4 +1,6 @@
 export function create(token: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:4000";
+  const serverHost = process.env.NEXT_PUBLIC_SERVER_HOST || "localhost:4000";
+  const protocol = serverHost.includes("localhost") ? "ws" : "wss";
+  const baseUrl = `${protocol}://${serverHost}`;
   return new WebSocket(`${baseUrl}?token=${token}`);
 }
