@@ -9,6 +9,7 @@ interface UseWebRTCProps {
 export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps) {
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const pendingOfferRef = useRef<any>(null);
     const pendingCandidatesRef = useRef<any[]>([]);
     const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
@@ -21,6 +22,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
+            setLocalStream(null);
         }
         pendingOfferRef.current = null;
         pendingCandidatesRef.current = [];
@@ -31,7 +33,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         const pc = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         });
-        
+
         pc.onicecandidate = (event) => {
             if (event.candidate) {
                 onSignal({ type: 'call:signal', candidate: event.candidate });
@@ -68,6 +70,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
                 } : false
             });
             localStreamRef.current = stream;
+            setLocalStream(stream);
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
             const offer = await pc.createOffer();
@@ -106,6 +109,7 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
                 } : false
             });
             localStreamRef.current = stream;
+            setLocalStream(stream);
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
             await pc.setRemoteDescription(new RTCSessionDescription(savedOffer));
@@ -220,5 +224,5 @@ export function useWebRTC({ onSignal, onStream, video = false }: UseWebRTCProps)
         return true;
     }, []);
 
-    return { startCall, answerCall, handleSignal, cleanup, connectionState, localStream: localStreamRef.current, toggleAudio, toggleVideo };
+    return { startCall, answerCall, handleSignal, cleanup, connectionState, localStream, toggleAudio, toggleVideo };
 }
