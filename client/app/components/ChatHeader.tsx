@@ -5,6 +5,7 @@ import { Phone, Video, UserMinus, Plus } from "lucide-react";
 interface ChatHeaderProps {
   connected: boolean;
   roomName: string;
+  isOnline: boolean;
   subtitle?: string;
   onInvite?: () => void;
   onUnfriend?: () => void;
@@ -14,26 +15,32 @@ interface ChatHeaderProps {
   onVideoCall?: () => void;
 }
 
-export function ChatHeader({ connected, roomName, subtitle, onInvite, onUnfriend, isAccepted, typingText, onCall, onVideoCall }: ChatHeaderProps) {
+export function ChatHeader({ connected, roomName, isOnline, subtitle, onInvite, onUnfriend, isAccepted, typingText, onCall, onVideoCall }: ChatHeaderProps) {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80">
-      <div>
-        <div className="text-h6 font-bold tracking-tight text-slate-100">{roomName}</div>
+      <div className="flex flex-col min-w-0">
+        <div className="flex items-center gap-2 group">
+          <div className="text-h6 font-bold tracking-tight text-slate-100 truncate">{roomName}</div>
+          <div
+            className={`w-2.5 h-2.5 rounded-full shadow-sm transition-all duration-500 ${isOnline
+              ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]"
+              : "bg-slate-500"
+              }`}
+            title={isOnline ? "Online" : "Offline"}
+          />
+        </div>
         {typingText ? (
           <div className="text-xs text-indigo-400 font-semibold animate-pulse">{typingText}</div>
         ) : subtitle && (
-          <div className="text-xs text-slate-400 prose-constrained font-medium">{subtitle}</div>
+          <div className="text-xs text-slate-400 prose-constrained font-medium truncate">{subtitle}</div>
         )}
       </div>
 
       <div className="flex items-center gap-4 text-xs">
-        <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900/50 border border-slate-800">
-          <span
-            className={`inline-flex h-2 w-2 rounded-full ${connected ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
-              }`}
-          />
-          <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
-            {connected ? "Live" : "Offline"}
+        <div className={`flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900/50 border border-slate-800 transition-opacity ${connected ? 'opacity-100' : 'opacity-40 animate-pulse'}`}>
+          <div className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-indigo-400' : 'bg-slate-600'}`} />
+          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400 whitespace-nowrap">
+            {connected ? "Syncing" : "Offline"}
           </span>
         </div>
 

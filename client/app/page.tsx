@@ -379,6 +379,7 @@ export default function ChatPage() {
             <ChatHeader
               connected={chat.connected}
               roomName={selectedUser ? (selectedUser.name || selectedUser.email.split("@")[0]) : "Select a friend"}
+              isOnline={!!selectedUser && chat.onlineUsers.has(selectedUser.id)}
               subtitle={selectedUser ? `Chatting with ${selectedUser.email}` : "Find someone to chat with!"}
               typingText={getTypingText()}
               onUnfriend={() => currentFriendship && chat.unfriend(currentFriendship.id)}
