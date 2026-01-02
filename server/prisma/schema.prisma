@@ -8,18 +8,23 @@ datasource db {
 }
 
 model User {
-  id              Int          @id @default(autoincrement())
-  email           String       @unique
-  password        String
-  name            String?
-  avatarUrl       String?
-  createdAt       DateTime     @default(now())
+  id               Int          @id @default(autoincrement())
+  email            String       @unique
+  password         String
+  name             String?
+  avatarUrl        String?
+  createdAt        DateTime     @default(now())
 
-  messages        Message[]
-  reactions       Reaction[]
+  messages         Message[]
+  reactions        Reaction[]
 
-  sentRequests    Friend[]     @relation("SentRequests")
-  receivedRequests Friend[]    @relation("ReceivedRequests")
+  sentRequests     Friend[]     @relation("SentRequests")
+  receivedRequests Friend[]     @relation("ReceivedRequests")
+
+  ownedRooms       Room[]       @relation("RoomOwner")
+  roomMemberships  RoomMember[]
+  sentInvites      RoomInvite[] @relation("Inviter")
+  receivedInvites  RoomInvite[] @relation("Invitee")
 }
 
 model Friend {
@@ -38,6 +43,49 @@ model Friend {
   @@unique([senderId, receiverId])
 }
 
+model Room {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  type      String   @default("GROUP") // "GROUP", "DM"
+  isPrivate Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  ownerId   Int?
+  owner     User?    @relation("RoomOwner", fields: [ownerId], references: [id])
+
+  members   RoomMember[]
+  messages  Message[]
+  invites   RoomInvite[]
+}
+
+model RoomMember {
+  id       Int      @id @default(autoincrement())
+  joinedAt DateTime @default(now())
+
+  roomId   Int
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model RoomInvite {
+  id        Int      @id @default(autoincrement())
+  status    String   @default("PENDING") // PENDING, ACCEPTED
+  createdAt DateTime @default(now())
+
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  inviterId Int
+  inviter   User     @relation("Inviter", fields: [inviterId], references: [id])
+
+  inviteeId Int
+  invitee   User     @relation("Invitee", fields: [inviteeId], references: [id])
+}
+
 model Message {
   id             Int      @id @default(autoincrement())
   text           String?
@@ -49,8 +97,11 @@ model Message {
   sender   User @relation(fields: [senderId], references: [id])
   senderId Int
 
-  friendId Int
-  friend   Friend @relation(fields: [friendId], references: [id], onDelete: Cascade)
+  friendId Int?
+  friend   Friend? @relation(fields: [friendId], references: [id], onDelete: Cascade)
+
+  roomId   Int?
+  room     Room?   @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   reactions Reaction[]
 }

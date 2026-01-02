@@ -12,10 +12,10 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
+    destination: (req: Express.Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
         cb(null, uploadDir);
     },
-    filename: (req, file, cb) => {
+    filename: (req: Express.Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
         // secure random filename + ext
         const ext = path.extname(file.originalname);
         const name = crypto.randomUUID();
@@ -28,7 +28,7 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB strictly
 });
 
-router.post("/", upload.single("file"), (req, res) => {
+router.post("/", upload.single("file"), (req: any, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
     }
