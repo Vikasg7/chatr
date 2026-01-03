@@ -52,9 +52,9 @@
 
 /* Light Theme Overrides */
 .light {
-  --color-base: #fafaf9;
-  --color-elevated: #fefefe;
-  --color-card: #f5f5f4;
+  --color-base: #fafafa;
+  --color-elevated: #f5f5f4;
+  --color-card: #fefefe;
   --border-subtle: #e7e5e4;
   --accent: #4f46e5;
   --accent-strong: #4338ca;
