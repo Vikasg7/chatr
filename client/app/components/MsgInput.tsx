@@ -1,6 +1,6 @@
 "use client";
-import { useRef } from "react";
-import { Paperclip, Send, Check, UserPlus, X, Edit2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Paperclip, Send, Check, UserPlus, X, Edit2, Loader2, FileIcon, ImageIcon, Music, Video as VideoIcon } from "lucide-react";
 import * as api from "@/lib/api";
 import toastLib from "@/lib/toast";
 
@@ -32,6 +32,8 @@ export function MsgInput({
   onAcceptRequest
 }: MsgInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   if (friendshipStatus !== "ACCEPTED") {
     return (
@@ -67,14 +69,37 @@ export function MsgInput({
     );
   }
 
+  async function handleSend() {
+    if (isUploading) return;
+    if (!value.trim() && !stagedFile) return;
+
+    let attachment = undefined;
+    if (stagedFile) {
+      setIsUploading(true);
+      try {
+        const res = await api.uploadFile(stagedFile);
+        attachment = { url: res.url, type: res.type, ...res };
+      } catch (err) {
+        toastLib.showToast("Failed to upload attachment", "error");
+        setIsUploading(false);
+        return;
+      }
+    }
+
+    onSend(attachment);
+    setStagedFile(null);
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      if (value.trim()) onSend();
+      handleSend();
     }
   }
 
-  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -83,23 +108,53 @@ export function MsgInput({
       e.target.value = "";
       return;
     }
-
-    e.target.value = "";
-    try {
-      const res = await api.uploadFile(file);
-      onSend({ url: res.url, type: res.type, ...res });
-    } catch (err: any) {
-      toastLib.showToast("Upload failed", "error");
-    }
+    setStagedFile(file);
   }
 
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return <ImageIcon size={18} />;
+    if (type.startsWith('video/')) return <VideoIcon size={18} />;
+    if (type.startsWith('audio/')) return <Music size={18} />;
+    return <FileIcon size={18} />;
+  };
+
   return (
-    <div className="px-4 py-4 border-t border-slate-800 bg-slate-950/90">
+    <div className="px-4 py-4 border-t border-slate-800 bg-slate-950/90 backdrop-blur-md">
+      {/* Staged File Preview */}
+      {stagedFile && (
+        <div className="mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="inline-flex items-center gap-3 p-2 pr-3 bg-indigo-600/10 border border-indigo-500/30 rounded-xl relative group">
+            <div className="w-10 h-10 flex items-center justify-center bg-indigo-600/20 text-indigo-400 rounded-lg">
+              {getFileIcon(stagedFile.type)}
+            </div>
+            <div className="min-w-0 max-w-[200px]">
+              <div className="text-xs font-bold text-slate-200 truncate">{stagedFile.name}</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider">{(stagedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+            </div>
+            <button
+              onClick={() => {
+                setStagedFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="p-1 bg-slate-800 text-slate-400 hover:text-white rounded-full border border-slate-700 hover:bg-slate-700 transition-all shadow-lg"
+              title="Remove attachment"
+            >
+              <X size={12} />
+            </button>
+            {isUploading && (
+              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] rounded-xl flex items-center justify-center">
+                <Loader2 size={16} className="text-indigo-400 animate-spin" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 text-slate-400 hover:text-indigo-400 transition hover:bg-indigo-500/10 rounded-xl"
-          disabled={disabled}
+          className={`p-2 transition rounded-xl ${stagedFile ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50'}`}
+          disabled={disabled || isUploading}
           title="Attach file"
         >
           <Paperclip size={20} />
@@ -111,7 +166,7 @@ export function MsgInput({
           onChange={handleFileSelect}
         />
 
-        <div className="flex-1 input-wrap flex items-center shadow-inner group-focus-within:border-indigo-500/50 transition-all">
+        <div className="flex-1 input-wrap flex items-center shadow-inner focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all group">
           <input
             className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-500 h-10"
             value={value}
@@ -120,8 +175,9 @@ export function MsgInput({
               onTyping?.(true);
             }}
             onBlur={() => onTyping?.(false)}
-            placeholder="Type a message…"
+            placeholder={stagedFile ? "Add a caption..." : "Type a message…"}
             onKeyDown={handleKeyDown}
+            disabled={disabled || isUploading}
           />
         </div>
 
@@ -136,25 +192,27 @@ export function MsgInput({
             </button>
           )}
           <button
-            onClick={() => onSend()}
+            onClick={handleSend}
             className={`
-              flex items-center justify-center gap-2 px-5 h-10 rounded-xl font-bold transition shadow-lg active:scale-95
+              flex items-center justify-center gap-2 px-3 sm:px-5 h-10 rounded-xl font-bold transition shadow-lg active:scale-95
               ${isEditing
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20'
                 : 'btn-primary shadow-indigo-900/20'
               }
               disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100
             `}
-            disabled={disabled || !value.trim()}
+            disabled={disabled || isUploading || (!value.trim() && !stagedFile)}
           >
-            {isEditing ? (
+            {isUploading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : isEditing ? (
               <>
                 <Edit2 size={16} />
-                <span>Update</span>
+                <span className="hidden sm:inline">Update</span>
               </>
             ) : (
               <>
-                <span>Send</span>
+                <span className="hidden sm:inline">Send</span>
                 <Send size={16} />
               </>
             )}
