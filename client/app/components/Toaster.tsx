@@ -17,7 +17,7 @@ export default function Toaster() {
 
   useEffect(() => {
     const unsub = toastLib.subscribe((t) => setToasts(t));
-    return () => unsub();
+    return () => { unsub() };
   }, []);
 
   return (
