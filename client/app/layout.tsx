@@ -17,16 +17,20 @@ export const viewport = {
   themeColor: "#020617",
 };
 
+import { ThemeProvider } from "@/app/components/ThemeProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={"bg-slate-950 text-slate-100"} >
-        {children}
-        <Toaster />
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

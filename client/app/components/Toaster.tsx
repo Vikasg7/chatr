@@ -21,7 +21,7 @@ export default function Toaster() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed left-6 bottom-6 z-[100] flex flex-col items-start gap-3">
+    <div className="pointer-events-none fixed inset-x-4 bottom-4 sm:inset-auto sm:left-6 sm:bottom-6 z-[100] flex flex-col items-center sm:items-start gap-3">
       <AnimatePresence mode="popLayout">
         {toasts.map((t) => (
           <motion.div
@@ -36,10 +36,10 @@ export default function Toaster() {
             <div className={`
               relative flex flex-col min-w-[320px] max-w-[420px] overflow-hidden rounded-2xl border backdrop-blur-2xl transition-all duration-300
               ${t.type === "error"
-                ? "bg-rose-950/40 border-rose-500/30 shadow-[0_8px_32px_rgba(244,63,94,0.15)]"
+                ? "bg-rose-500/10 border-rose-500/30 shadow-[0_8px_32px_rgba(244,63,94,0.15)]"
                 : t.type === "success"
-                  ? "bg-emerald-950/40 border-emerald-500/30 shadow-[0_8px_32px_rgba(16,185,129,0.15)]"
-                  : "bg-slate-900/60 border-slate-700/50 shadow-[0_8px_32px_rgba(2,6,23,0.3)]"}
+                  ? "bg-emerald-500/10 border-emerald-500/30 shadow-[0_8px_32px_rgba(16,185,129,0.15)]"
+                  : "bg-[var(--color-card)] border-[var(--border-subtle)] shadow-[0_8px_32px_rgba(2,6,23,0.3)]"}
             `}>
               {/* Content */}
               <div className="flex items-start gap-4 p-4">
@@ -48,7 +48,7 @@ export default function Toaster() {
                 </div>
 
                 <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-relaxed text-slate-100">
+                  <p className="text-sm font-semibold leading-relaxed text-[var(--text-primary)]">
                     {t.message}
                   </p>
 

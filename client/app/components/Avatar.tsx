@@ -70,7 +70,7 @@ export function Avatar({ name, email, src, size = 40, className = "", alt, onlin
       </div>
 
       {online && (
-        <span className="absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-900" />
+        <span className="absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-[var(--color-base)]" />
       )}
     </div>
   );

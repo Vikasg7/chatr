@@ -38,10 +38,10 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden content-pad space-y-0 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 scroll-thin min-w-0"
+      className="flex-1 overflow-y-auto overflow-x-hidden content-pad space-y-0 bg-[var(--color-base)] scroll-thin min-w-0"
     >
       {messages.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-sm text-slate-500">
+        <div className="h-full flex items-center justify-center text-sm text-[var(--text-muted)]">
           No messages yet. Be the first to say hi 👋
         </div>
       ) : (
@@ -72,21 +72,21 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.15 }}
-                  className={`group flex items-start gap-3 w-full ${mine ? 'flex-row-reverse pl-20' : 'flex-row pr-20'} ${marginClass}`}
+                  className={`group flex items-start gap-2.5 w-full ${mine ? 'flex-row-reverse pl-6 md:pl-20' : 'flex-row pr-6 md:pr-20'} ${marginClass}`}
                 >
                   {/* Time Marker - Only show for first in group */}
-                  <div className={`w-6 flex-shrink-0 text-[10px] text-slate-600 font-medium pt-2 ${mine ? 'text-left' : 'text-right'}`}>
+                  <div className={`w-6 flex-shrink-0 text-[10px] text-[var(--text-muted)] font-medium pt-2 ${mine ? 'text-left' : 'text-right'}`}>
                     {isFirstInGroup && format.time(m.createdAt)}
                   </div>
 
                   {/* Message Content Container */}
-                  <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[70%] sm:max-w-[60%] lg:max-w-[50%]`}>
+                  <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]`}>
                     <div
                       className={`
                         relative px-3 py-2 shadow-sm text-sm break-all group
                         ${mine
                           ? 'bg-indigo-600 text-indigo-50 rounded-2xl rounded-tr-sm'
-                          : 'bg-slate-800 text-slate-200 rounded-2xl rounded-tl-sm'}
+                          : 'bg-[var(--color-card)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm border border-[var(--border-subtle)]'}
                       `}
                     >
                       {/* Text Content */}
@@ -99,7 +99,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                       {m.attachmentUrl && (
                         <div className="mt-2 space-y-2">
                           {m.attachmentType === "IMAGE" && (
-                            <div className="relative group/img overflow-hidden rounded-xl border border-white/10 shadow-lg bg-black/20">
+                            <div className="relative group/img overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
                               <img
                                 src={`http://localhost:4000${m.attachmentUrl}`}
                                 alt="attachment"
@@ -109,7 +109,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                           )}
 
                           {m.attachmentType === "VIDEO" && (
-                            <div className="relative overflow-hidden rounded-xl border border-white/10 shadow-lg bg-black/40">
+                            <div className="relative overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
                               <video
                                 controls
                                 className="max-h-[300px] max-w-full rounded-lg"
@@ -119,8 +119,8 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                           )}
 
                           {m.attachmentType === "AUDIO" && (
-                            <div className="p-2 rounded-xl border border-white/10 bg-slate-900/50 shadow-inner min-w-[240px]">
-                              <div className="text-[10px] text-slate-500 mb-1 flex items-center gap-1.5 px-1 truncate">
+                            <div className="p-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--color-elevated)] shadow-inner min-w-[240px]">
+                              <div className="text-[10px] text-[var(--text-muted)] mb-1 flex items-center gap-1.5 px-1 truncate">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                                 {m.metadata?.attachmentName || "Audio clip"}
                               </div>
@@ -133,9 +133,9 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                           )}
 
                           {(m.attachmentType === "FILE" || m.attachmentType === "TEXT") && (
-                            <div className={`group/file flex flex-col gap-2 p-3 rounded-xl border transition-all ${mine ? 'bg-indigo-700/50 border-indigo-400/30 hover:bg-indigo-600/50' : 'bg-slate-900 border-slate-700 hover:bg-slate-800'}`}>
+                            <div className={`group/file flex flex-col gap-2 p-3 rounded-xl border transition-all ${mine ? 'bg-indigo-700/50 border-indigo-400/30 hover:bg-indigo-600/50' : 'bg-[var(--color-elevated)] border-[var(--border-subtle)] hover:bg-[var(--border-subtle)]'}`}>
                               <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${mine ? 'bg-indigo-600' : 'bg-slate-800'}`}>
+                                <div className={`p-2 rounded-lg ${mine ? 'bg-indigo-600' : 'bg-[var(--color-elevated)]'}`}>
                                   {m.attachmentType === "TEXT" ? (
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                   ) : (
@@ -143,10 +143,10 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-semibold truncate text-slate-100 italic">
+                                  <div className="text-xs font-semibold truncate text-[var(--text-primary)] italic">
                                     {m.metadata?.attachmentName || "Download file"}
                                   </div>
-                                  <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider opacity-60">
+                                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider opacity-60">
                                     {m.attachmentType}
                                   </div>
                                 </div>
@@ -155,7 +155,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                                 href={`http://localhost:4000${m.attachmentUrl}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`flex items-center justify-center gap-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${mine ? 'bg-indigo-500 hover:bg-indigo-400 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-100'}`}
+                                className={`flex items-center justify-center gap-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${mine ? 'bg-indigo-500 hover:bg-indigo-400 text-white' : 'bg-[var(--border-subtle)] hover:bg-[var(--accent)] hover:text-white text-[var(--text-primary)]'}`}
                               >
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                 DOWNLOAD
@@ -164,7 +164,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                           )}
 
                           {m.attachmentType === "CALL_SUMMARY" && (
-                            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-slate-900/40 border border-white/5 shadow-inner backdrop-blur-md">
+                            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[var(--color-card)] border border-[var(--border-subtle)] shadow-inner backdrop-blur-md">
                               <div className={`p-2 rounded-full ${m.metadata?.type === 'call:cancel' || m.metadata?.type === 'call:reject' ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
                                 {m.metadata?.type === 'call:cancel' || m.metadata?.type === 'call:reject' ? (
                                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
@@ -176,7 +176,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                                 <span className={`text-xs font-bold uppercase tracking-widest opacity-80 ${m.metadata?.type === 'call:cancel' || m.metadata?.type === 'call:reject' ? 'text-red-400' : 'text-emerald-400'}`}>
                                   {m.text}
                                 </span>
-                                <span className="text-[10px] text-slate-500 font-medium">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[10px] text-[var(--text-muted)] font-medium">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                               </div>
                             </div>
                           )}
@@ -189,7 +189,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                           href={(m.metadata as any).url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={`block mt-2 rounded-lg border overflow-hidden transition max-w-sm group ${mine ? 'border-indigo-500/50 bg-indigo-800/50 hover:bg-indigo-700/50' : 'border-slate-700 bg-slate-900/50 hover:bg-slate-900'}`}
+                          className={`block mt-2 rounded-lg border overflow-hidden transition max-w-sm group ${mine ? 'border-indigo-500/50 bg-indigo-800/50 hover:bg-indigo-700/50' : 'border-[var(--border-subtle)] bg-[var(--color-card)] hover:bg-[var(--border-subtle)]'}`}
                         >
                           {(m.metadata as any).image && (
                             <div className="h-32 w-full relative">
@@ -197,9 +197,9 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                             </div>
                           )}
                           <div className="p-2">
-                            <div className={`text-xs font-semibold truncate ${mine ? 'text-indigo-100' : 'text-slate-200'}`}>{(m.metadata as any).title}</div>
+                            <div className={`text-xs font-semibold truncate ${mine ? 'text-indigo-100' : 'text-[var(--text-primary)]'}`}>{(m.metadata as any).title}</div>
                             {(m.metadata as any).description && (
-                              <div className={`text-[10px] mt-1 line-clamp-2 ${mine ? 'text-indigo-200/80' : 'text-slate-400'}`}>{(m.metadata as any).description}</div>
+                              <div className={`text-[10px] mt-1 line-clamp-2 ${mine ? 'text-indigo-200/80' : 'text-[var(--text-muted)]'}`}>{(m.metadata as any).description}</div>
                             )}
                           </div>
                         </a>
@@ -210,7 +210,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                         <div className="absolute top-1/2 -right-8 -translate-y-1/2">
                           <button
                             onClick={() => setActivePickerId(activePickerId === m.id ? null : m.id)}
-                            className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                            className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                             title="React"
                           >
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 group-hover:opacity-100 transition-opacity">
@@ -227,7 +227,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                                 initial={{ opacity: 0, scale: 0.9, y: 5 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                                className="absolute bottom-full mb-2 z-[110] flex items-center gap-0.5 p-1 bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-full shadow-2xl left-0"
+                                className="absolute bottom-full mb-2 z-[110] flex items-center gap-0.5 p-1 bg-[var(--color-elevated)] backdrop-blur-xl border border-[var(--border-subtle)] rounded-full shadow-2xl left-0"
                               >
                                 {["👍", "❤️", "😂", "😮", "😢", "🙏", "😘"].map(emoji => (
                                   <button
@@ -251,7 +251,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                       {mine && (
                         <div className="absolute top-0 -left-14 h-full flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
                           <button
-                            className="p-1 px-1 text-slate-400 hover:text-indigo-400 hover:scale-110 transition-all"
+                            className="p-1 px-1 text-[var(--text-muted)] hover:text-indigo-400 hover:scale-110 transition-all"
                             onClick={() => onEdit?.(m)}
                             title="Edit"
                           >
@@ -261,7 +261,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                             </svg>
                           </button>
                           <button
-                            className="p-1 text-slate-400 hover:text-red-400 hover:scale-110 transition-all"
+                            className="p-1 text-[var(--text-muted)] hover:text-red-400 hover:scale-110 transition-all"
                             onClick={() => onDelete?.(m.id)}
                             title="Delete"
                           >

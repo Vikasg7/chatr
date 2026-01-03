@@ -188,6 +188,14 @@ export default function ChatPage() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showSearchModal, setShowSearchModal] = useState(false);
 
+  // Initialize sidebar state based on screen size
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isMobile = window.innerWidth < 768;
+      setShowSidebar(!isMobile);
+    }
+  }, []);
+
   const currentFriendship = chat.friends.find(f =>
     (chat.currentFriendId && f.id === chat.currentFriendId) ||
     (chat.selectedUserId && (f.senderId === chat.selectedUserId || f.receiverId === chat.selectedUserId))
@@ -242,9 +250,9 @@ export default function ChatPage() {
     };
 
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-6">
-        <div className="w-full max-w-6xl grid grid-cols-2 gap-8 items-center">
-          <div className="text-left relative">
+      <main className="min-h-screen flex items-center justify-center bg-[var(--color-base)] px-6 transition-colors">
+        <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center py-12">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left relative">
             <div className="absolute -left-10 -top-10 w-56 h-56 rounded-full bg-gradient-to-br from-indigo-700/30 to-blue-400/20 blur-3xl opacity-40 pointer-events-none" />
             <motion.h1 initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.36 }} className="text-5xl font-extrabold text-slate-100 mb-4">Chatr</motion.h1>
             <p className="text-slate-300 prose-constrained mb-6 font-medium">Connect with friends — messages sync in real time.</p>
@@ -342,7 +350,7 @@ export default function ChatPage() {
           {/* Sidebar */}
           <aside
             onClick={(e) => e.stopPropagation()}
-            className={`w-72 border-r border-slate-800 bg-slate-950 px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-all duration-300 md:relative ${showSidebar ? 'translate-x-0' : '-translate-x-full md:ml-[-288px]'}`}
+            className={`w-72 border-r border-[var(--border-subtle)] bg-[var(--color-elevated)] px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-all duration-300 md:relative ${showSidebar ? 'translate-x-0' : '-translate-x-full md:ml-[-288px]'}`}
           >
             <div className="flex flex-col h-full">
               <div className="mb-6 flex justify-between items-center">
@@ -367,8 +375,8 @@ export default function ChatPage() {
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-800 meta-small mt-auto">
-                Connected as <span className="font-medium text-slate-400">{user?.email}</span>
+              <div className="pt-3 border-t border-[var(--border-subtle)] meta-small mt-auto">
+                Connected as <span className="font-medium text-[var(--text-muted)]">{user?.email}</span>
               </div>
             </div>
           </aside>
@@ -424,7 +432,7 @@ export default function ChatPage() {
             )}
 
             {!currentFriendship && !selectedUser && (
-              <div className="h-24 flex items-center justify-center border-t border-slate-800 bg-slate-950/90 text-slate-500 text-sm italic">
+              <div className="h-24 flex items-center justify-center border-t border-[var(--border-subtle)] bg-[var(--color-elevated)] text-[var(--text-muted)] text-sm italic">
                 Select a friend from the sidebar to start chatting
               </div>
             )}

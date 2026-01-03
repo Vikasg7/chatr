@@ -9,6 +9,7 @@ interface GlobalHeaderProps {
 }
 
 import { Menu, LogOut, MessageSquare } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   const { token, hydrated, user, setToken } = useAuthStore();
@@ -27,12 +28,12 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   }, [hydrated, token]);
 
   return (
-    <header className="app-header z-20 border-b border-white/5 backdrop-blur-xl bg-slate-950/50 px-6 h-16 flex items-center justify-between shadow-2xl">
+    <header className="app-header z-20 px-6 shadow-2xl">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <button
           onClick={onMenuClick}
-          className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+          className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-xl transition-all"
           aria-label="Toggle menu"
           title="Toggle Sidebar"
         >
@@ -44,27 +45,31 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
             <MessageSquare size={22} fill="white" />
           </div>
           <div className="flex flex-col">
-            <div className="text-xl font-black tracking-tight text-white leading-none">Chatr</div>
-            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 mt-1">
+            <div className="text-xl font-black tracking-tight text-[var(--text-primary)] leading-none">Chatr</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--text-muted)] mt-1">
               Connect Securely
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 sm:gap-6">
         {hydrated && token ? (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-bold text-slate-200">
+              <span className="text-sm font-bold text-[var(--text-primary)]">
                 {user?.name || user?.email?.split('@')[0]}
               </span>
-              <span className="text-[10px] text-slate-500 font-medium">
+              <span className="text-[10px] text-[var(--text-muted)] font-medium">
                 {user?.email}
               </span>
             </div>
 
-            <div className="w-[1px] h-8 bg-white/5 hidden sm:block" />
+            <div className="w-[px] h-8 bg-[var(--border-subtle)] hidden sm:block" />
+
+            <ThemeToggle />
+
+            <div className="w-[1px] h-8 bg-[var(--border-subtle)]" />
 
             <button
               onClick={logout}
@@ -75,7 +80,10 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
             </button>
           </div>
         ) : (
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Not signed in</span>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Not signed in</span>
+          </div>
         )}
       </div>
     </header>

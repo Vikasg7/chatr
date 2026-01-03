@@ -37,10 +37,10 @@ export function MsgInput({
 
   if (friendshipStatus !== "ACCEPTED") {
     return (
-      <div className="px-4 py-8 border-t border-slate-800 bg-slate-950/90 text-center">
+      <div className="px-4 py-8 border-t border-[var(--border-subtle)] bg-[var(--color-elevated)] text-center">
         {friendshipStatus === "PENDING" ? (
           <div className="flex flex-col items-center">
-            <p className="text-slate-400 text-sm mb-4 font-medium italic">
+            <p className="text-[var(--text-muted)] text-sm mb-4 font-medium italic">
               {isSender ? "Friend request sent. Waiting for response..." : "This user wants to connect!"}
             </p>
             {!isSender && (
@@ -55,7 +55,7 @@ export function MsgInput({
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <p className="text-slate-400 text-sm mb-4 font-medium italic">You are not friends with this user yet.</p>
+            <p className="text-[var(--text-muted)] text-sm mb-4 font-medium italic">You are not friends with this user yet.</p>
             <button
               onClick={onSendRequest}
               className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-lg shadow-indigo-900/20 active:scale-95"
@@ -119,7 +119,7 @@ export function MsgInput({
   };
 
   return (
-    <div className="px-4 py-4 border-t border-slate-800 bg-slate-950/90 backdrop-blur-md">
+    <div className="px-4 py-4 border-t border-[var(--border-subtle)] bg-[var(--color-elevated)] backdrop-blur-md transition-colors">
       {/* Staged File Preview */}
       {stagedFile && (
         <div className="mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -128,15 +128,15 @@ export function MsgInput({
               {getFileIcon(stagedFile.type)}
             </div>
             <div className="min-w-0 max-w-[200px]">
-              <div className="text-xs font-bold text-slate-200 truncate">{stagedFile.name}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider">{(stagedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+              <div className="text-xs font-bold text-[var(--text-primary)] truncate">{stagedFile.name}</div>
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{(stagedFile.size / 1024 / 1024).toFixed(2)} MB</div>
             </div>
             <button
               onClick={() => {
                 setStagedFile(null);
                 if (fileInputRef.current) fileInputRef.current.value = "";
               }}
-              className="p-1 bg-slate-800 text-slate-400 hover:text-white rounded-full border border-slate-700 hover:bg-slate-700 transition-all shadow-lg"
+              className="p-1 bg-[var(--color-card)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-full border border-[var(--border-subtle)] hover:bg-[var(--border-subtle)] transition-all shadow-lg"
               title="Remove attachment"
             >
               <X size={12} />
@@ -153,7 +153,7 @@ export function MsgInput({
       <div className="flex items-center gap-3">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className={`p-2 transition rounded-xl ${stagedFile ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50'}`}
+          className={`p-2 transition rounded-xl ${stagedFile ? 'text-indigo-400 bg-indigo-500/10' : 'text-[var(--text-muted)] hover:text-indigo-400 hover:bg-[var(--border-subtle)]'}`}
           disabled={disabled || isUploading}
           title="Attach file"
         >
@@ -185,7 +185,7 @@ export function MsgInput({
           {isEditing && (
             <button
               onClick={onCancelEdit}
-              className="flex items-center justify-center p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition"
+              className="flex items-center justify-center p-2 text-[var(--text-muted)] hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition"
               title="Cancel editing"
             >
               <X size={20} />

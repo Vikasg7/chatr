@@ -17,14 +17,14 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ connected, roomName, isOnline, subtitle, onInvite, onUnfriend, isAccepted, typingText, onCall, onVideoCall }: ChatHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--color-elevated)] transition-colors">
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-2 group">
-          <div className="text-h6 font-bold tracking-tight text-slate-100 truncate">{roomName}</div>
+          <div className="text-h6 font-bold tracking-tight text-[var(--text-primary)] truncate">{roomName}</div>
           <div
             className={`w-2.5 h-2.5 rounded-full shadow-sm transition-all duration-500 ${isOnline
               ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]"
-              : "bg-slate-500"
+              : "bg-[var(--text-muted)]"
               }`}
             title={isOnline ? "Online" : "Offline"}
           />
@@ -37,9 +37,9 @@ export function ChatHeader({ connected, roomName, isOnline, subtitle, onInvite, 
       </div>
 
       <div className="flex items-center gap-4 text-xs">
-        <div className={`flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900/50 border border-slate-800 transition-opacity ${connected ? 'opacity-100' : 'opacity-40 animate-pulse'}`}>
-          <div className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-indigo-400' : 'bg-slate-600'}`} />
-          <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400 whitespace-nowrap">
+        <div className={`flex items-center gap-2 px-2 py-1 rounded-full bg-[var(--color-base)] border border-[var(--border-subtle)] transition-opacity ${connected ? 'opacity-100' : 'opacity-40 animate-pulse'}`}>
+          <div className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-indigo-400' : 'bg-[var(--text-muted)]'}`} />
+          <span className="text-[9px] uppercase tracking-wider font-bold text-[var(--text-muted)] whitespace-nowrap">
             {connected ? "Syncing" : "Offline"}
           </span>
         </div>
@@ -48,14 +48,14 @@ export function ChatHeader({ connected, roomName, isOnline, subtitle, onInvite, 
           <div className="flex items-center gap-1">
             <button
               onClick={onCall}
-              className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50 rounded-xl transition-all"
+              className="p-2 text-[var(--text-muted)] hover:text-indigo-400 hover:bg-[var(--border-subtle)] rounded-xl transition-all"
               title="Start Audio Call"
             >
               <Phone size={20} />
             </button>
             <button
               onClick={onVideoCall}
-              className={`p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50 rounded-xl transition-all ${!onVideoCall ? 'cursor-not-allowed opacity-40' : ''}`}
+              className={`p-2 text-[var(--text-muted)] hover:text-indigo-400 hover:bg-[var(--border-subtle)] rounded-xl transition-all ${!onVideoCall ? 'cursor-not-allowed opacity-40' : ''}`}
               title={onVideoCall ? "Start Video Call" : "Video call coming soon"}
               disabled={!onVideoCall}
             >

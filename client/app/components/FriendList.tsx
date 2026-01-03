@@ -45,8 +45,8 @@ export function FriendList({
             className={`relative w-full rounded-xl text-sm font-medium
               flex flex-row items-center gap-3 px-3 py-2 text-left transition-colors
               ${active
-                ? "bg-indigo-600 text-slate-50 shadow-sm"
-                : "text-slate-300 hover:bg-slate-800"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-[var(--text-muted)] hover:bg-[var(--border-subtle)]"
               }
               ${!isAccepted ? "opacity-60" : ""}
             `}
@@ -62,15 +62,15 @@ export function FriendList({
             </div>
 
             <div className="min-w-0 flex-1 text-left">
-              <div className="room-name truncate leading-tight flex items-center gap-2">
+              <div className={`room-name truncate leading-tight flex items-center gap-2 ${active ? 'text-white' : 'text-[var(--text-primary)]'}`}>
                 {friendUser.name || friendUser.email?.split("@")[0] || "Unknown"}
                 {!isAccepted && (
-                  <span className="text-[10px] bg-slate-700 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wider ${active ? 'bg-indigo-500 text-white' : 'bg-[var(--border-subtle)] text-[var(--text-muted)]'}`}>
                     {isSender ? "Pending" : "Request"}
                   </span>
                 )}
               </div>
-              <div className="meta-small truncate">
+              <div className={`meta-small truncate ${active ? 'text-indigo-100' : 'text-[var(--text-muted)]'}`}>
                 {friendUser.email}
               </div>
             </div>
@@ -86,7 +86,7 @@ export function FriendList({
       })}
 
       {friends.length === 0 && (
-        <div className="text-xs text-slate-500 mt-4 px-3">
+        <div className="text-xs text-[var(--text-muted)] mt-4 px-3 italic">
           No friends yet. Click the + button to find someone!
         </div>
       )}
