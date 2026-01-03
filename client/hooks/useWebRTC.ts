@@ -17,6 +17,7 @@ export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWeb
     const pendingOfferRef = useRef<any>(null);
     const pendingCandidatesRef = useRef<any[]>([]);
     const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
+    const bufferedRemoteStreamRef = useRef<MediaStream | null>(null);
 
     useEffect(() => {
         onSignalRef.current = onSignal;
@@ -36,6 +37,7 @@ export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWeb
         }
         pendingOfferRef.current = null;
         pendingCandidatesRef.current = [];
+        bufferedRemoteStreamRef.current = null;
         setConnectionState('new');
     }, []);
 
@@ -69,11 +71,20 @@ export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWeb
         };
 
         pc.ontrack = (event) => {
-            onStreamRef.current(event.streams[0]);
+            const stream = event.streams[0];
+            if (pc.connectionState === 'connected') {
+                onStreamRef.current(stream);
+            } else {
+                bufferedRemoteStreamRef.current = stream;
+            }
         };
 
         pc.onconnectionstatechange = () => {
             setConnectionState(pc.connectionState);
+            if (pc.connectionState === 'connected' && bufferedRemoteStreamRef.current) {
+                onStreamRef.current(bufferedRemoteStreamRef.current);
+                bufferedRemoteStreamRef.current = null;
+            }
         };
 
         pcRef.current = pc;
