@@ -256,11 +256,11 @@ export default function ChatPage() {
         <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center py-12">
           <div className="flex flex-col items-center md:items-start text-center md:text-left relative">
             <div className="absolute -left-10 -top-10 w-56 h-56 rounded-full bg-gradient-to-br from-indigo-700/30 to-blue-400/20 blur-3xl opacity-40 pointer-events-none" />
-            <motion.h1 initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.36 }} className="text-5xl font-extrabold text-slate-100 mb-4">Chatr</motion.h1>
-            <p className="text-slate-300 prose-constrained mb-6 font-medium">Connect with friends — messages sync in real time.</p>
+            <motion.h1 initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.36 }} className="text-5xl font-extrabold text-[var(--text-primary)] mb-4">Chatr</motion.h1>
+            <p className="text-[var(--text-muted)] prose-constrained mb-6 font-medium">Connect with friends — messages sync in real time.</p>
             <button
               onClick={() => { auth.setMode("login"); auth.setEmail("demo@chatr.local"); auth.setPassword("password"); auth.login({ email: "demo@chatr.local", password: "password" }); }}
-              className="rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-100 shadow-xl transition-all flex items-center gap-2 group"
+              className="rounded-xl bg-[var(--color-elevated)] hover:bg-[var(--color-card)] border border-[var(--border-subtle)] px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] shadow-xl transition-all flex items-center gap-2 group"
             >
               <Sparkles size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
               Try demo
@@ -271,9 +271,9 @@ export default function ChatPage() {
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50" />
 
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-slate-100">{auth.mode === "login" ? "Sign in" : "Create account"}</h2>
+              <h2 className="text-2xl font-bold text-[var(--text-primary)]">{auth.mode === "login" ? "Sign in" : "Create account"}</h2>
               <button
-                className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-strong)] transition-colors"
                 onClick={() => auth.setMode(auth.mode === "login" ? "signup" : "login")}
               >
                 {auth.mode === "login" ? "Create an account" : "Back to login"}
@@ -283,9 +283,9 @@ export default function ChatPage() {
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {auth.mode === "signup" && (
                 <div className="relative group/input">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={18} />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within/input:text-[var(--accent)] transition-colors" size={18} />
                   <input
-                    className="input w-full !pl-10 h-11 bg-slate-900/50 border-slate-700/50 focus:border-indigo-500 focus:bg-slate-900 transition-all font-medium"
+                    className="input w-full !pl-10 h-11 transition-all font-medium"
                     placeholder="Full Name"
                     value={auth.name}
                     onChange={e => auth.setName(e.target.value)}
@@ -295,10 +295,10 @@ export default function ChatPage() {
               )}
 
               <div className="relative group/input">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={18} />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within/input:text-[var(--accent)] transition-colors" size={18} />
                 <input
                   type="email"
-                  className="input w-full !pl-10 h-11 bg-slate-900/50 border-slate-700/50 focus:border-indigo-500 focus:bg-slate-900 transition-all font-medium"
+                  className="input w-full !pl-10 h-11 transition-all font-medium"
                   placeholder="Email address"
                   value={auth.email}
                   onChange={e => auth.setEmail(e.target.value)}
@@ -307,10 +307,10 @@ export default function ChatPage() {
               </div>
 
               <div className="relative group/input">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors" size={18} />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within/input:text-[var(--accent)] transition-colors" size={18} />
                 <input
                   type="password"
-                  className="input w-full !pl-10 h-11 bg-slate-900/50 border-slate-700/50 focus:border-indigo-500 focus:bg-slate-900 transition-all font-medium"
+                  className="input w-full !pl-10 h-11 transition-all font-medium"
                   placeholder="Password"
                   value={auth.password}
                   onChange={e => auth.setPassword(e.target.value)}

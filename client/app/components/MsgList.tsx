@@ -161,10 +161,10 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-semibold truncate text-[var(--text-primary)] italic">
+                                  <div className={`text-xs font-semibold truncate italic ${mine ? 'text-indigo-50' : 'text-[var(--text-primary)]'}`}>
                                     {m.metadata?.attachmentName || "Download file"}
                                   </div>
-                                  <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider opacity-60">
+                                  <div className={`text-[10px] uppercase font-bold tracking-wider opacity-60 ${mine ? 'text-indigo-200' : 'text-[var(--text-muted)]'}`}>
                                     {m.attachmentType}
                                   </div>
                                 </div>
