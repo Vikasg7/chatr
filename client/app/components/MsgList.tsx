@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as format from "@/lib/format";
 import { useAuthStore } from "@/stores/auth";
 import { Avatar } from "./Avatar";
+import { MediaViewer } from "./MediaViewer";
 
 interface MessageListProps {
   messages: any[];
@@ -18,6 +19,7 @@ interface MessageListProps {
 export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete, onAcceptInvite }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activePickerId, setActivePickerId] = useState<number | null>(null);
+  const [viewedMedia, setViewedMedia] = useState<{ url: string; type: "IMAGE" | "VIDEO" } | null>(null);
   const userId = currentUserId;
 
   const prevCountRef = useRef(messages.length);
@@ -99,7 +101,10 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                       {m.attachmentUrl && (
                         <div className="mt-2 space-y-2">
                           {m.attachmentType === "IMAGE" && (
-                            <div className="relative group/img overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
+                            <div
+                              className="relative group/img overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)] cursor-pointer"
+                              onClick={() => setViewedMedia({ url: `http://localhost:4000${m.attachmentUrl}`, type: "IMAGE" })}
+                            >
                               <img
                                 src={`http://localhost:4000${m.attachmentUrl}`}
                                 alt="attachment"
@@ -109,12 +114,25 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                           )}
 
                           {m.attachmentType === "VIDEO" && (
-                            <div className="relative overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
+                            <div className="relative group/video overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
                               <video
                                 controls
                                 className="max-h-[300px] max-w-full rounded-lg"
                                 src={`http://localhost:4000${m.attachmentUrl}`}
                               />
+                              {/* Fullscreen Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewedMedia({ url: `http://localhost:4000${m.attachmentUrl}`, type: "VIDEO" });
+                                }}
+                                className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover/video:opacity-100 transition-all z-10"
+                                title="Open in fullscreen"
+                              >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                                </svg>
+                              </button>
                             </div>
                           )}
 
@@ -311,6 +329,13 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
           </AnimatePresence>
         </div>
       )}
+
+      {/* Media Viewer */}
+      <MediaViewer
+        mediaUrl={viewedMedia?.url || null}
+        mediaType={viewedMedia?.type || null}
+        onClose={() => setViewedMedia(null)}
+      />
     </div>
   );
 }

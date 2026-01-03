@@ -1,0 +1,80 @@
+"use client";
+
+import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+
+interface MediaViewerProps {
+    mediaUrl: string | null;
+    mediaType: "IMAGE" | "VIDEO" | null;
+    onClose: () => void;
+}
+
+export function MediaViewer({ mediaUrl, mediaType, onClose }: MediaViewerProps) {
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
+        };
+
+        if (mediaUrl) {
+            document.addEventListener("keydown", handleEscape);
+            document.body.style.overflow = "hidden";
+        }
+
+        return () => {
+            document.removeEventListener("keydown", handleEscape);
+            document.body.style.overflow = "unset";
+        };
+    }, [mediaUrl, onClose]);
+
+    return (
+        <AnimatePresence>
+            {mediaUrl && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-sm"
+                    onClick={onClose}
+                >
+                    {/* Close Button */}
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all z-10"
+                        title="Close (ESC)"
+                    >
+                        <X size={24} />
+                    </button>
+
+                    {/* Media Content */}
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="max-w-[95vw] max-h-[95vh] relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {mediaType === "IMAGE" && (
+                            <img
+                                src={mediaUrl}
+                                alt="Fullscreen view"
+                                className="max-w-full max-h-[95vh] object-contain rounded-lg shadow-2xl"
+                            />
+                        )}
+
+                        {mediaType === "VIDEO" && (
+                            <video
+                                src={mediaUrl}
+                                controls
+                                autoPlay
+                                className="max-w-full max-h-[95vh] rounded-lg shadow-2xl"
+                            />
+                        )}
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+}
