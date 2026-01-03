@@ -202,11 +202,16 @@ export class WSService {
           reactions
         });
       } else if (msg.type.startsWith("call:")) {
-        if (!client.friendId) return;
+        const friend = await this.prisma.friend.findUnique({
+          where: { id: client.friendId || 0 }, // fallback or use the friendId from the message if provided
+          select: { senderId: true, receiverId: true }
+        });
+
+        if (!friend) return;
+        const targetUserId = friend.senderId === client.userId ? friend.receiverId : friend.senderId;
 
         // Offline check only on the initial request
         if (msg.type === "call:request") {
-          const targetUserId = msg.targetUserId;
           const isOnline = Array.from(this.clients.values()).some(c => c.userId === targetUserId);
 
           if (!isOnline) {
@@ -218,8 +223,10 @@ export class WSService {
           }
         }
 
-        // Always broadcast call signals to the recipient
-        this.broadcastToChat(client.friendId, msg, client.id);
+        // Always send call signals to all connections of the target user
+        this.sendToUser(targetUserId, { ...msg, friendId: client.friendId });
+        // And send to other connections of the sender (to sync states)
+        this.sendToUser(client.userId, { ...msg, friendId: client.friendId }, client.id);
 
         // Logging Call History
         if (msg.type === "call:cancel" || msg.type === "call:reject" || msg.type === "call:end") {
@@ -272,10 +279,10 @@ export class WSService {
     }
   }
 
-  sendToUser(userId: number, payload: any) {
+  sendToUser(userId: number, payload: any, excludeClientId?: string) {
     const data = JSON.stringify(payload);
     for (const client of this.clients.values()) {
-      if (client.userId === userId && client.socket.readyState === WebSocket.OPEN) {
+      if (client.userId === userId && client.socket.readyState === WebSocket.OPEN && client.id !== excludeClientId) {
         client.socket.send(data);
       }
     }
