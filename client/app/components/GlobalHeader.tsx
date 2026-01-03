@@ -33,7 +33,7 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
         {/* Mobile Menu Button */}
         <button
           onClick={onMenuClick}
-          className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-xl transition-all"
+          className="md:hidden p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-xl transition-all"
           aria-label="Toggle menu"
           title="Toggle Sidebar"
         >
