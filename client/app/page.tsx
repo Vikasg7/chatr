@@ -343,14 +343,17 @@ export default function ChatPage() {
 
       <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col relative">
         <div
-          onClick={() => { if (showSidebar) setShowSidebar(false); }}
+          onClick={() => {
+            // Only allow closing sidebar on mobile
+            if (showSidebar && window.innerWidth < 768) setShowSidebar(false);
+          }}
           className="flex flex-1 overflow-hidden relative h-full"
         >
 
           {/* Sidebar */}
           <aside
             onClick={(e) => e.stopPropagation()}
-            className={`w-72 border-r border-[var(--border-subtle)] bg-[var(--color-elevated)] px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-all duration-300 md:relative ${showSidebar ? 'translate-x-0' : '-translate-x-full md:ml-[-288px]'}`}
+            className={`w-72 border-r border-[var(--border-subtle)] bg-[var(--color-elevated)] px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-all duration-300 md:relative md:translate-x-0 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}
           >
             <div className="flex flex-col h-full">
               <div className="mb-6 flex justify-between items-center">
@@ -369,7 +372,11 @@ export default function ChatPage() {
                 <FriendList
                   friends={chat.friends}
                   currentFriendId={chat.currentFriendId}
-                  onSelect={(id) => { chat.selectFriend(id); setShowSidebar(false); }}
+                  onSelect={(id) => {
+                    chat.selectFriend(id);
+                    // Only close sidebar on mobile
+                    if (window.innerWidth < 768) setShowSidebar(false);
+                  }}
                   currentUserId={user?.id}
                   onlineUsers={chat.onlineUsers}
                 />
