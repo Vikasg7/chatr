@@ -11,7 +11,7 @@ import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
 import { SearchUserModal } from "./components/SearchUserModal";
 import { motion } from 'framer-motion';
-import { LogIn, UserPlus, LogOut, UserMinus, Send, Search, User, Mail, Lock, Sparkles, Users, Plus, X } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, UserMinus, Send, Search, User, Mail, Lock, Sparkles, Users, Plus, X, Paperclip } from 'lucide-react';
 
 // Hooks
 import { useChat } from "@/hooks/useChat";
@@ -186,6 +186,8 @@ export default function ChatPage() {
 
   // Layout State
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [droppedFile, setDroppedFile] = useState<File | null>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
 
   // Initialize sidebar state based on screen size
@@ -390,6 +392,35 @@ export default function ChatPage() {
 
           <section
             className={`flex-1 flex flex-col relative min-w-0 transition-opacity duration-300 ${showSidebar ? 'opacity-50 md:opacity-100' : 'opacity-100'}`}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (e.dataTransfer.types.includes('Files')) {
+                setIsDraggingFile(true);
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Only hide overlay if leaving the section element itself
+              if (e.currentTarget === e.target) {
+                setIsDraggingFile(false);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDraggingFile(false);
+
+              const file = e.dataTransfer.files?.[0];
+              if (file && currentFriendship?.status === 'ACCEPTED') {
+                setDroppedFile(file);
+              }
+            }}
           >
             <ChatHeader
               connected={chat.connected}
@@ -424,7 +455,21 @@ export default function ChatPage() {
                 isSender={currentFriendship.senderId === user?.id}
                 onSendRequest={() => chat.sendFriendRequest(selectedUser?.id)}
                 onAcceptRequest={() => chat.acceptFriendRequest(currentFriendship.id)}
+                externalFile={droppedFile}
+                onFileConsumed={() => setDroppedFile(null)}
               />
+            )}
+
+            {/* Drag-and-Drop Overlay */}
+            {isDraggingFile && currentFriendship?.status === 'ACCEPTED' && (
+              <div className="absolute inset-0 bg-indigo-600/10 backdrop-blur-sm border-4 border-dashed border-indigo-500/50 rounded-2xl flex items-center justify-center z-50 pointer-events-none">
+                <div className="bg-[var(--color-card)] px-8 py-6 rounded-2xl border border-indigo-500/30 shadow-2xl">
+                  <p className="text-lg font-bold text-indigo-400 flex items-center gap-3">
+                    <Paperclip size={24} />
+                    Drop file to attach
+                  </p>
+                </div>
+              </div>
             )}
 
             {!currentFriendship && selectedUser && (

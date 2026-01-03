@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Paperclip, Send, Check, UserPlus, X, Edit2, Loader2, FileIcon, ImageIcon, Music, Video as VideoIcon } from "lucide-react";
 import * as api from "@/lib/api";
 import toastLib from "@/lib/toast";
@@ -16,6 +16,8 @@ interface MsgInputProps {
   isSender?: boolean;
   onSendRequest?: () => void;
   onAcceptRequest?: () => void;
+  externalFile?: File | null;
+  onFileConsumed?: () => void;
 }
 
 export function MsgInput({
@@ -29,11 +31,26 @@ export function MsgInput({
   friendshipStatus,
   isSender,
   onSendRequest,
-  onAcceptRequest
+  onAcceptRequest,
+  externalFile,
+  onFileConsumed
 }: MsgInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [stagedFile, setStagedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Handle external file from drag-and-drop
+  useEffect(() => {
+    if (externalFile) {
+      if (externalFile.size > 10 * 1024 * 1024) {
+        toastLib.showToast("File size must be less than 10MB", "error");
+        onFileConsumed?.();
+        return;
+      }
+      setStagedFile(externalFile);
+      onFileConsumed?.();
+    }
+  }, [externalFile, onFileConsumed]);
 
   if (friendshipStatus !== "ACCEPTED") {
     return (
