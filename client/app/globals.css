@@ -52,15 +52,15 @@
 
 /* Light Theme Overrides */
 .light {
-  --color-base: #f8fafc;
-  --color-elevated: #ffffff;
-  --color-card: #f1f5f9;
-  --border-subtle: #e2e8f0;
+  --color-base: #fafaf9;
+  --color-elevated: #fefefe;
+  --color-card: #f5f5f4;
+  --border-subtle: #e7e5e4;
   --accent: #4f46e5;
   --accent-strong: #4338ca;
-  --text-primary: #0f172a;
-  --text-muted: #64748b;
-  --shadow-soft: 0 10px 30px rgba(100, 116, 139, 0.15);
+  --text-primary: #1c1917;
+  --text-muted: #78716c;
+  --shadow-soft: 0 10px 30px rgba(120, 113, 108, 0.08);
 }
 
 /* App base styles */
