@@ -88,9 +88,23 @@ export function MessageList({
       className="flex-1 overflow-y-auto overflow-x-hidden content-pad space-y-0 bg-[var(--color-base)] scroll-thin min-w-0"
     >
       {messages.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-sm text-[var(--text-muted)]">
-          No messages yet. Be the first to say hi 👋
-        </div>
+        loadingMore ? (
+          <div className="h-full flex flex-col p-4 gap-4 overflow-hidden">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'flex-row-reverse' : 'flex-row'} opacity-${100 - (i * 15)}`}>
+                <div className="w-8 h-8 rounded-full bg-[var(--border-subtle)] animate-pulse shrink-0" />
+                <div className={`flex flex-col gap-2 ${i % 2 === 0 ? 'items-end' : 'items-start'} flex-1`}>
+                  <div className="h-10 w-2/3 max-w-[240px] rounded-2xl bg-[var(--border-subtle)] animate-pulse" />
+                  <div className="h-3 w-16 rounded bg-[var(--border-subtle)] animate-pulse opacity-50" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center text-sm text-[var(--text-muted)]">
+            No messages yet. Be the first to say hi 👋
+          </div>
+        )
       ) : (
         <div className="flex flex-col">
           {/* Top Sentinel for Infinite Scroll */}

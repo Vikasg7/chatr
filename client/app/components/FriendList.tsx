@@ -113,9 +113,23 @@ export function FriendList({
       })}
 
       {friends.length === 0 ? (
-        <div className="text-xs text-[var(--text-muted)] mt-4 px-3 italic">
-          No friends yet. Click the + button to find someone!
-        </div>
+        loadingMore ? (
+          <div className="space-y-3 px-1">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2 opacity-50">
+                <div className="w-9 h-9 rounded-full bg-[var(--border-subtle)] animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-24 rounded bg-[var(--border-subtle)] animate-pulse" />
+                  <div className="h-2 w-32 rounded bg-[var(--border-subtle)] animate-pulse opacity-50" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-[var(--text-muted)] mt-4 px-3 italic">
+            No friends yet. Click the + button to find someone!
+          </div>
+        )
       ) : (
         <div ref={bottomSentinelRef} className="h-10 flex items-center justify-center">
           {loadingMore && (
