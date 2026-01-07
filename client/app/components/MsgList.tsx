@@ -85,7 +85,7 @@ export function MessageList({
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden content-pad space-y-0 bg-[var(--color-base)] scroll-thin min-w-0"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 space-y-0 bg-[var(--color-base)] scroll-thin min-w-0"
     >
       {messages.length === 0 ? (
         loadingMore ? (
