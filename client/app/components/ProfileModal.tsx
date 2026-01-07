@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Dialog } from "@headlessui/react";
+import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/stores/auth";
 import { SERVER_URL, API_BASE } from "@/lib/api";
@@ -66,8 +66,8 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
         <AnimatePresence>
             {open && (
                 <Dialog static as={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} open={open} onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <Dialog.Panel as={motion.div} initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl">
-                        <Dialog.Title className="text-xl font-bold text-white mb-4">Edit Profile</Dialog.Title>
+                    <DialogPanel as={motion.div} initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+                        <DialogTitle className="text-xl font-bold text-white mb-4">Edit Profile</DialogTitle>
 
                         <div className="flex flex-col items-center mb-6">
                             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
@@ -105,7 +105,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
                                 {loading ? "Saving..." : "Save Changes"}
                             </button>
                         </div>
-                    </Dialog.Panel>
+                    </DialogPanel>
                 </Dialog>
             )}
         </AnimatePresence>
