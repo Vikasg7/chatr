@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Dialog } from "@headlessui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/stores/auth";
-import * as api from "@/lib/api";
+import { SERVER_URL, API_BASE } from "@/lib/api";
 import toastLib from "@/lib/toast";
 
 interface ProfileModalProps {
@@ -14,7 +14,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
     const { user, updateUser } = useAuthStore();
     const [name, setName] = useState(user?.name || "");
     const [loading, setLoading] = useState(false);
-    const [preview, setPreview] = useState<string | null>(user?.avatarUrl ? `http://localhost:4000${user.avatarUrl}` : null);
+    const [preview, setPreview] = useState<string | null>(user?.avatarUrl ? `${SERVER_URL}${user.avatarUrl}` : null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +41,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
             // Let's us direct fetch with token.
 
             const token = useAuthStore.getState().token;
-            const res = await fetch("http://localhost:4000/api/auth/profile", {
+            const res = await fetch(`${API_BASE}/auth/profile`, {
                 method: "PUT",
                 headers: {
                     "Authorization": `Bearer ${token}`

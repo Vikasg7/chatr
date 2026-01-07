@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as format from "@/lib/format";
-import { useAuthStore } from "@/stores/auth";
-import { Avatar } from "./Avatar";
 import { MediaViewer } from "./MediaViewer";
+import { SERVER_URL } from "@/lib/api";
 
 interface MessageListProps {
   messages: any[];
@@ -103,10 +102,10 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                           {m.attachmentType === "IMAGE" && (
                             <div
                               className="relative group/img overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)] cursor-pointer"
-                              onClick={() => setViewedMedia({ url: `http://localhost:4000${m.attachmentUrl}`, type: "IMAGE" })}
+                              onClick={() => setViewedMedia({ url: `${SERVER_URL}${m.attachmentUrl}`, type: "IMAGE" })}
                             >
                               <img
-                                src={`http://localhost:4000${m.attachmentUrl}`}
+                                src={`${SERVER_URL}${m.attachmentUrl}`}
                                 alt="attachment"
                                 className="max-h-[300px] max-w-full object-contain rounded-lg transition-transform duration-500 group-hover/img:scale-105"
                               />
@@ -118,13 +117,13 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                               <video
                                 controls
                                 className="max-h-[300px] max-w-full rounded-lg"
-                                src={`http://localhost:4000${m.attachmentUrl}`}
+                                src={`${SERVER_URL}${m.attachmentUrl}`}
                               />
                               {/* Fullscreen Button */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setViewedMedia({ url: `http://localhost:4000${m.attachmentUrl}`, type: "VIDEO" });
+                                  setViewedMedia({ url: `${SERVER_URL}${m.attachmentUrl}`, type: "VIDEO" });
                                 }}
                                 className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover/video:opacity-100 transition-all z-10"
                                 title="Open in fullscreen"
@@ -145,7 +144,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                               <audio
                                 controls
                                 className="w-full h-8"
-                                src={`http://localhost:4000${m.attachmentUrl}`}
+                                src={`${SERVER_URL}${m.attachmentUrl}`}
                               />
                             </div>
                           )}
@@ -170,7 +169,7 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
                                 </div>
                               </div>
                               <a
-                                href={`http://localhost:4000${m.attachmentUrl}`}
+                                href={`${SERVER_URL}${m.attachmentUrl}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className={`flex items-center justify-center gap-2 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${mine ? 'bg-indigo-500 hover:bg-indigo-400 text-white' : 'bg-[var(--border-subtle)] hover:bg-[var(--accent)] hover:text-white text-[var(--text-primary)]'}`}

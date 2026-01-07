@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import React from "react";
+import { SERVER_URL } from "@/lib/api";
 
 type AvatarProps = {
   name?: string | null;
@@ -61,9 +62,14 @@ export function Avatar({ name, email, src, size = 40, className = "", alt, onlin
     <div className={`relative ${className}`}>
       <div className={`avatar ${sizeClass}`} style={style} aria-label={alt || name || email}>
         {src ? (
-          // Next Image is preferred in Next.js; fallback to normal img if you prefer
-          // make sure external domains are allowed in next.config.js if using external urls
-          <Image src={src} alt={alt || name || email || "avatar"} width={size} height={size} style={{ objectFit: "cover" }} />
+          <Image
+            src={src.startsWith("/") ? `${SERVER_URL}${src}` : src}
+            alt={alt || name || email || "avatar"}
+            width={size}
+            height={size}
+            style={{ objectFit: "cover" }}
+            unoptimized={src.startsWith("/") || src.includes(SERVER_URL)}
+          />
         ) : (
           <span>{fallback}</span>
         )}
