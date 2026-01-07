@@ -24,6 +24,7 @@ export class WSService {
     this.prisma = prisma;
     this.wss = new WebSocketServer({ server });
     this.wss.on("connection", this.handleConnection.bind(this));
+    this.setupHeartbeat();
   }
 
   private handleConnection(socket: WebSocket, req: any) {
@@ -35,8 +36,8 @@ export class WSService {
     if (!token) return;
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-      const userId = decoded.userId;
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: any };
+      const userId = Number(decoded.userId);
 
       this.clients.set(id, { id, socket, userId });
       this.onlineUsers.add(userId);
@@ -51,10 +52,27 @@ export class WSService {
 
       socket.on("message", this.handleMessage.bind(this, id));
       socket.on("close", this.handleSocketClose.bind(this, id));
+
+      // Heartbeat setup
+      (socket as any).isAlive = true;
+      socket.on("pong", () => { (socket as any).isAlive = true; });
+
     } catch {
       socket.send(JSON.stringify({ "error": "Invalid token" }));
       socket.close();
     }
+  }
+
+  private setupHeartbeat() {
+    const interval = setInterval(() => {
+      this.wss.clients.forEach((ws: any) => {
+        if (ws.isAlive === false) return ws.terminate();
+        ws.isAlive = false;
+        ws.ping();
+      });
+    }, 30000);
+
+    this.wss.on("close", () => clearInterval(interval));
   }
 
   private handleSocketClose(senderId: string) {

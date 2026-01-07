@@ -49,22 +49,37 @@ export default function ChatPage() {
   });
 
   const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+  const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (chat.callStatus === 'RINGING_OUT') {
       const audio = new Audio('/outgoing.mp3');
       audio.loop = true;
-      audio.play().catch(e => console.error("Audio play failed:", e));
+      audio.play().catch(e => {
+        if (e.name !== 'AbortError') console.error("Audio play failed:", e);
+      });
       ringtoneRef.current = audio;
+
+      // Set timeout for unanswered call
+      callTimeoutRef.current = setTimeout(() => {
+        toastLib.showToast("No answer", "info");
+        handleCancelCall();
+      }, 30000); // 30 seconds
     } else if (chat.callStatus === 'RINGING_IN') {
       const audio = new Audio('/incoming.mp3');
       audio.loop = true;
-      audio.play().catch(e => console.error("Audio play failed:", e));
+      audio.play().catch(e => {
+        if (e.name !== 'AbortError') console.error("Audio play failed:", e);
+      });
       ringtoneRef.current = audio;
     } else {
       if (ringtoneRef.current) {
         ringtoneRef.current.pause();
         ringtoneRef.current = null;
+      }
+      if (callTimeoutRef.current) {
+        clearTimeout(callTimeoutRef.current);
+        callTimeoutRef.current = null;
       }
     }
 
@@ -82,11 +97,33 @@ export default function ChatPage() {
     });
   }, [chat, webRTC]);
 
+  // Effect to handle calling someone who goes offline
+  useEffect(() => {
+    if (chat.callStatus !== 'IDLE' && chat.activeCallUserId && chat.connected && !chat.onlineUsers.has(Number(chat.activeCallUserId))) {
+      // Find the user object to get their name
+      const peer = chat.friends.map(f => getFriendUser(f)).find(u => u?.id === Number(chat.activeCallUserId));
+      const name = peer?.name || peer?.email.split('@')[0] || "User";
+
+      toastLib.showToast(`${name} went offline`, "info");
+
+      // Stop the call locally
+      chat.setCallStatus('IDLE');
+      chat.setActiveCallUserId(null);
+      chat.setRemoteStream(null);
+      webRTC.cleanup();
+    }
+  }, [chat.onlineUsers, chat.callStatus, chat.activeCallUserId, chat.friends, chat.connected]);
+
   const handleStartCall = () => {
     if (!currentFriendUser) return;
+    if (!chat.onlineUsers.has(Number(currentFriendUser.id))) {
+      toastLib.showToast(`${currentFriendUser.name || 'User'} is offline`, "error");
+      return;
+    }
     chat.setCallType('audio');
     chat.setCallStatus('RINGING_OUT');
-    webRTC.startCall(currentFriendUser.id);
+    chat.setActiveCallUserId(Number(currentFriendUser.id));
+    webRTC.startCall(Number(currentFriendUser.id));
     // Send call type to peer
     if (chat.wsRef.current) {
       chat.wsRef.current.send(JSON.stringify({
@@ -99,9 +136,14 @@ export default function ChatPage() {
 
   const handleStartVideoCall = () => {
     if (!currentFriendUser) return;
+    if (!chat.onlineUsers.has(Number(currentFriendUser.id))) {
+      toastLib.showToast(`${currentFriendUser.name || 'User'} is offline`, "error");
+      return;
+    }
     chat.setCallType('video');
     chat.setCallStatus('RINGING_OUT');
-    webRTC.startCall(currentFriendUser.id, true);
+    chat.setActiveCallUserId(Number(currentFriendUser.id));
+    webRTC.startCall(Number(currentFriendUser.id), true);
     // Send call type to peer
     if (chat.wsRef.current) {
       chat.wsRef.current.send(JSON.stringify({
@@ -503,7 +545,10 @@ export default function ChatPage() {
       {chat.callType === 'audio' ? (
         <CallOverlay
           status={chat.callStatus}
-          callerName={currentFriendUser?.name || currentFriendUser?.email.split("@")[0]}
+          callerName={(() => {
+            const peer = chat.friends.map(f => getFriendUser(f)).find(u => u?.id === chat.activeCallUserId);
+            return peer?.name || peer?.email.split("@")[0] || "Unknown";
+          })()}
           onAnswer={handleAnswerCall}
           onReject={handleRejectCall}
           onCancel={handleCancelCall}
@@ -513,7 +558,10 @@ export default function ChatPage() {
       ) : (
         <VideoCallOverlay
           status={chat.callStatus}
-          callerName={currentFriendUser?.name || currentFriendUser?.email.split("@")[0]}
+          callerName={(() => {
+            const peer = chat.friends.map(f => getFriendUser(f)).find(u => u?.id === chat.activeCallUserId);
+            return peer?.name || peer?.email.split("@")[0] || "Unknown";
+          })()}
           localStream={webRTC.localStream}
           remoteStream={chat.remoteStream}
           onAnswer={handleAnswerCall}

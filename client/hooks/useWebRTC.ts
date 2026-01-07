@@ -113,6 +113,12 @@ export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWeb
             });
             localStreamRef.current = stream;
             setLocalStream(stream);
+
+            if (pc.signalingState === 'closed') {
+                stream.getTracks().forEach(track => track.stop());
+                return;
+            }
+
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
             const offer = await pc.createOffer();
