@@ -47,7 +47,7 @@ Chatr is a real-time chat application built with Next.js, React, and WebSockets.
 - [x] call shouldn't go through if the websocket is in closed state or user is offline
 - [x] broken attachments link in attachments
 - [x] add reply to the message feature
-- [ ] revamp mobile UI
+- [x] revamp mobile UI
 - [x] add infinite scrolling in chat list and messages
 - [x] add loading indicator for messages
 - [x] hide logout and theme button in the profile menu on the top right corner

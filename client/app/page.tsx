@@ -276,7 +276,7 @@ export default function ChatPage() {
   // Loading Screen
   if (!hydrated || (token && !ready)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-base)] relative overflow-hidden">
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[var(--color-base)] relative overflow-hidden">
         {/* Background Gradients */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 blur-[120px] rounded-full" />
@@ -324,7 +324,7 @@ export default function ChatPage() {
     };
 
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[var(--color-base)] px-6 transition-colors">
+      <main className="h-[100dvh] w-full flex items-center justify-center bg-[var(--color-base)] px-6 transition-colors overflow-hidden">
         <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center py-12">
           <div className="flex flex-col items-center md:items-start text-center md:text-left relative">
             <div className="absolute -left-10 -top-10 w-56 h-56 rounded-full bg-gradient-to-br from-indigo-700/30 to-blue-400/20 blur-3xl opacity-40 pointer-events-none" />
@@ -415,7 +415,7 @@ export default function ChatPage() {
     <>
       <GlobalHeader onMenuClick={() => setShowSidebar(true)} />
 
-      <main className="flex h-[calc(100vh-70px)] overflow-hidden flex-col relative">
+      <main className="flex h-[calc(100dvh-4rem)] overflow-hidden flex-col relative w-full">
         <div
           onClick={() => {
             // Only allow closing sidebar on mobile
@@ -501,7 +501,7 @@ export default function ChatPage() {
               connected={chat.connected}
               roomName={selectedUser ? (selectedUser.name || selectedUser.email.split("@")[0]) : "Select a friend"}
               isOnline={!!selectedUser && chat.onlineUsers.has(selectedUser.id)}
-              subtitle={selectedUser ? `Chatting with ${selectedUser.email}` : "Find someone to chat with!"}
+              subtitle={selectedUser ? `${selectedUser.email}` : "Find someone to chat with!"}
               typingText={getTypingText()}
               onUnfriend={() => currentFriendship && chat.unfriend(currentFriendship.id)}
               isAccepted={currentFriendship?.status === "ACCEPTED"}
