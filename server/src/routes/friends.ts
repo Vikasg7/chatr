@@ -6,9 +6,12 @@ import { WSService } from "../ws";
 export default (prisma: PrismaClient, wsService: WSService) => {
     const router = Router();
 
-    // LIST FRIENDS & REQUESTS
+    // LIST FRIENDS & REQUESTS (with pagination)
     router.get("/", requireAuth, async (req: AuthRequest, res) => {
         const userId = req.userId!;
+        const limit = parseInt(req.query.limit as string) || 20;
+        const offset = parseInt(req.query.offset as string) || 0;
+
         const relations = await prisma.friend.findMany({
             where: {
                 OR: [
@@ -16,6 +19,9 @@ export default (prisma: PrismaClient, wsService: WSService) => {
                     { receiverId: userId }
                 ]
             },
+            take: limit,
+            skip: offset,
+            orderBy: { createdAt: "desc" },
             include: {
                 sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
                 receiver: { select: { id: true, email: true, name: true, avatarUrl: true } }
@@ -107,10 +113,12 @@ export default (prisma: PrismaClient, wsService: WSService) => {
         });
     });
 
-    // GET MESSAGES
+    // GET MESSAGES (with pagination support)
     router.get("/:friendId/messages", requireAuth, async (req: AuthRequest, res) => {
         const friendId = parseInt(req.params.friendId);
         const userId = req.userId!;
+        const limit = parseInt(req.query.limit as string) || 50;
+        const beforeId = req.query.beforeId ? parseInt(req.query.beforeId as string) : undefined;
 
         const friendship = await prisma.friend.findUnique({
             where: { id: friendId }
@@ -122,8 +130,12 @@ export default (prisma: PrismaClient, wsService: WSService) => {
         }
 
         const messages = await prisma.message.findMany({
-            where: { friendId },
-            orderBy: { id: "asc" },
+            where: {
+                friendId,
+                id: beforeId ? { lt: beforeId } : undefined
+            },
+            orderBy: { id: "desc" },
+            take: limit,
             include: {
                 sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
                 reactions: {
@@ -132,7 +144,7 @@ export default (prisma: PrismaClient, wsService: WSService) => {
             }
         });
 
-        res.json(messages);
+        res.json(messages.reverse());
     });
 
     // DELETE FRIENDSHIP

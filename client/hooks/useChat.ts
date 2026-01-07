@@ -26,6 +26,10 @@ export function useChat(token: string | null, user: any) {
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [callType, setCallType] = useState<'audio' | 'video'>('audio');
     const [activeCallUserId, setActiveCallUserId] = useState<number | null>(null);
+    const [hasMoreMessages, setHasMoreMessages] = useState(true);
+    const [loadingMessages, setLoadingMessages] = useState(false);
+    const [hasMoreFriends, setHasMoreFriends] = useState(true);
+    const [loadingFriends, setLoadingFriends] = useState(false);
 
     const wsRef = useRef<WebSocket | null>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -63,24 +67,81 @@ export function useChat(token: string | null, user: any) {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ type: "chat:join", friendId: friendshipId }));
         }
-        const msgs = await api.get(`/friends/${friendshipId}/messages`);
-        setMessages((msgs || []).sort((a: any, b: any) => a.id - b.id));
+
+        setLoadingMessages(true);
+        try {
+            const limit = 50;
+            const msgs = await api.get(`/friends/${friendshipId}/messages?limit=${limit}`);
+            setMessages((msgs || []).sort((a: any, b: any) => a.id - b.id));
+            setHasMoreMessages(msgs.length === limit);
+        } finally {
+            setLoadingMessages(false);
+        }
     }, [user?.id, friends]);
+
+    const loadMoreMessages = useCallback(async () => {
+        if (!currentFriendId || !hasMoreMessages || loadingMessages) return;
+
+        const firstMsgId = messages[0]?.id;
+        if (!firstMsgId) return;
+
+        setLoadingMessages(true);
+        try {
+            const limit = 50;
+            const moreMsgs = await api.get(`/friends/${currentFriendId}/messages?beforeId=${firstMsgId}&limit=${limit}`);
+            if (moreMsgs && moreMsgs.length > 0) {
+                setMessages(prev => [...moreMsgs, ...prev].sort((a, b) => a.id - b.id));
+                setHasMoreMessages(moreMsgs.length === limit);
+            } else {
+                setHasMoreMessages(false);
+            }
+        } finally {
+            setLoadingMessages(false);
+        }
+    }, [currentFriendId, hasMoreMessages, loadingMessages, messages]);
 
     // Initial Data Load
     useEffect(() => {
         if (!token) return;
         (async () => {
+            setLoadingFriends(true);
             try {
-                const f = await api.get("/friends");
+                const limit = 20;
+                const f = await api.get(`/friends?limit=${limit}&offset=0`);
                 setFriends(f);
+                setHasMoreFriends(f.length === limit);
                 const firstAccepted = f.find((fr: any) => fr.status === "ACCEPTED");
                 if (firstAccepted && !currentFriendId) {
                     selectFriend(firstAccepted.id, f);
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error(e); } finally {
+                setLoadingFriends(false);
+            }
         })();
     }, [token]);
+
+    const loadMoreFriends = useCallback(async () => {
+        if (!token || !hasMoreFriends || loadingFriends) return;
+
+        setLoadingFriends(true);
+        try {
+            const limit = 20;
+            const offset = friends.length;
+            const moreFriends = await api.get(`/friends?limit=${limit}&offset=${offset}`);
+            if (moreFriends && moreFriends.length > 0) {
+                setFriends(prev => {
+                    const existingIds = new Set(prev.map(f => f.id));
+                    const filtered = moreFriends.filter((f: any) => !existingIds.has(f.id));
+                    return [...prev, ...filtered];
+                });
+                setHasMoreFriends(moreFriends.length === limit);
+            } else {
+                setHasMoreFriends(false);
+            }
+        } catch (e) { console.error(e); } finally {
+            setLoadingFriends(false);
+        }
+    }, [token, hasMoreFriends, loadingFriends, friends.length]);
 
     // Auto-sync selectFriend when selectedUserId is set
     useEffect(() => {
@@ -325,6 +386,12 @@ export function useChat(token: string | null, user: any) {
         callType,
         setCallType,
         activeCallUserId,
-        setActiveCallUserId
+        setActiveCallUserId,
+        hasMoreMessages,
+        loadingMessages,
+        loadMoreMessages,
+        hasMoreFriends,
+        loadingFriends,
+        loadMoreFriends
     };
 }

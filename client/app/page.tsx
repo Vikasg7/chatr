@@ -423,6 +423,9 @@ export default function ChatPage() {
                   }}
                   currentUserId={user?.id}
                   onlineUsers={chat.onlineUsers}
+                  onLoadMore={chat.loadMoreFriends}
+                  hasMore={chat.hasMoreFriends}
+                  loadingMore={chat.loadingFriends}
                 />
               </div>
 
@@ -482,6 +485,9 @@ export default function ChatPage() {
               onReact={chat.sendReaction}
               onEdit={startEdit}
               onDelete={chat.deleteMsg}
+              onLoadMore={chat.loadMoreMessages}
+              hasMore={chat.hasMoreMessages}
+              loadingMore={chat.loadingMessages}
             />
 
             {currentFriendship && (

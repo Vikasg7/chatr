@@ -9,6 +9,8 @@ export default (prisma: PrismaClient) => {
   router.get("/", requireAuth, async (req: AuthRequest, res) => {
     const userId = req.userId!;
     const q = (req.query.q as string | undefined)?.trim();
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = parseInt(req.query.offset as string) || 0;
 
     const where: any = {
       id: { not: userId },
@@ -24,8 +26,10 @@ export default (prisma: PrismaClient) => {
     try {
       const users = await prisma.user.findMany({
         where,
-        select: { id: true, email: true, name: true },
-        orderBy: { createdAt: "asc" },
+        select: { id: true, email: true, name: true, avatarUrl: true },
+        take: limit,
+        skip: offset,
+        orderBy: { name: "asc" },
       });
 
       res.json(users);

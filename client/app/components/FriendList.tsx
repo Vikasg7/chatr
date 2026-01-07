@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Avatar } from "./Avatar";
 
@@ -9,6 +10,9 @@ interface FriendListProps {
   onSelect: (id: number) => void;
   currentUserId?: number | null;
   onlineUsers?: Set<number>;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 export function FriendList({
@@ -17,7 +21,30 @@ export function FriendList({
   onSelect,
   currentUserId = null,
   onlineUsers = new Set(),
+  onLoadMore,
+  hasMore = false,
+  loadingMore = false,
 }: FriendListProps) {
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!onLoadMore || !hasMore || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (bottomSentinelRef.current) {
+      observer.observe(bottomSentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, loadingMore]);
   return (
     <motion.div
       initial={{ opacity: 0, x: -12 }}
@@ -85,9 +112,15 @@ export function FriendList({
         );
       })}
 
-      {friends.length === 0 && (
+      {friends.length === 0 ? (
         <div className="text-xs text-[var(--text-muted)] mt-4 px-3 italic">
           No friends yet. Click the + button to find someone!
+        </div>
+      ) : (
+        <div ref={bottomSentinelRef} className="h-10 flex items-center justify-center">
+          {loadingMore && (
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          )}
         </div>
       )}
     </motion.div>

@@ -13,25 +13,71 @@ interface MessageListProps {
   onEdit?: (msg: any) => void;
   onDelete?: (msgId: number) => void;
   onAcceptInvite?: (inviteId: number) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
-export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete, onAcceptInvite }: MessageListProps) {
+export function MessageList({
+  messages,
+  currentUserId,
+  onReact,
+  onEdit,
+  onDelete,
+  onAcceptInvite,
+  onLoadMore,
+  hasMore = false,
+  loadingMore = false
+}: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const [activePickerId, setActivePickerId] = useState<number | null>(null);
   const [viewedMedia, setViewedMedia] = useState<{ url: string; type: "IMAGE" | "VIDEO" } | null>(null);
   const userId = currentUserId;
 
   const prevCountRef = useRef(messages.length);
+  const prevScrollHeightRef = useRef(0);
 
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    if (!onLoadMore || !hasMore || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (topSentinelRef.current) {
+      observer.observe(topSentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, loadingMore]);
+
+  // Handle scroll position maintenance
   useEffect(() => {
     if (scrollRef.current) {
       const isNewMessage = messages.length > prevCountRef.current;
-      const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 100;
+      const isBatchLoad = (messages.length - prevCountRef.current) > 1;
 
-      // Only scroll if a new message was added and user is near bottom (or it's their own message)
-      if (isNewMessage && (isNearBottom || messages[messages.length - 1]?.sender?.id === currentUserId)) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      if (isNewMessage) {
+        if (isBatchLoad) {
+          // Maintaining scroll position when loading "above"
+          const delta = scrollRef.current.scrollHeight - prevScrollHeightRef.current;
+          scrollRef.current.scrollTop = scrollRef.current.scrollTop + delta;
+        } else {
+          // Standard auto-scroll to bottom for single new messages
+          const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 150;
+          if (isNearBottom || messages[messages.length - 1]?.sender?.id === currentUserId) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          }
+        }
       }
+      prevScrollHeightRef.current = scrollRef.current.scrollHeight;
     }
     prevCountRef.current = messages.length;
   }, [messages, currentUserId]);
@@ -47,6 +93,16 @@ export function MessageList({ messages, currentUserId, onReact, onEdit, onDelete
         </div>
       ) : (
         <div className="flex flex-col">
+          {/* Top Sentinel for Infinite Scroll */}
+          <div ref={topSentinelRef} className="h-4 flex items-center justify-center">
+            {loadingMore && (
+              <div className="flex items-center gap-2 py-4">
+                <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Loading more history...</span>
+              </div>
+            )}
+          </div>
+
           <AnimatePresence initial={false}>
             {messages.map((m, i) => {
               const mine = m.sender.id === userId;

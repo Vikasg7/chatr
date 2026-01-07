@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, UserPlus, Check } from "lucide-react";
+import { Search, X, UserPlus, Check, Users } from "lucide-react";
 import * as api from "@/lib/api";
 
 interface SearchUserModalProps {
@@ -23,18 +23,25 @@ export function SearchUserModal({
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!query.trim()) {
             setResults([]);
+            setHasMore(false);
             return;
         }
 
         const timer = setTimeout(async () => {
             setLoading(true);
             try {
-                const users = await api.get(`/users?q=${query}`);
-                setResults(users.filter((u: any) => u.id !== currentUserId));
+                const limit = 20;
+                const users = await api.get(`/users?q=${query}&limit=${limit}&offset=0`);
+                const filtered = users.filter((u: any) => u.id !== currentUserId);
+                setResults(filtered);
+                setHasMore(users.length === limit);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -44,6 +51,45 @@ export function SearchUserModal({
 
         return () => clearTimeout(timer);
     }, [query, currentUserId]);
+
+    const loadMore = async () => {
+        if (loading || loadingMore || !hasMore || !query.trim()) return;
+
+        setLoadingMore(true);
+        try {
+            const limit = 20;
+            const offset = results.length + (results.length > 0 ? 1 : 0); // Approx since we filter ourselves
+            const users = await api.get(`/users?q=${query}&limit=${limit}&offset=${results.length}`);
+            const filtered = users.filter((u: any) => u.id !== currentUserId);
+
+            setResults(prev => {
+                const existingIds = new Set(prev.map(u => u.id));
+                const newOnes = filtered.filter((u: any) => !existingIds.has(u.id));
+                return [...prev, ...newOnes];
+            });
+            setHasMore(users.length === limit);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!hasMore || loading || loadingMore || !isOpen) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                loadMore();
+            }
+        }, { threshold: 0.1 });
+
+        if (bottomSentinelRef.current) {
+            observer.observe(bottomSentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, loading, loadingMore, isOpen, results.length]);
 
     if (!isOpen) return null;
 
@@ -110,12 +156,27 @@ export function SearchUserModal({
                             );
                         })}
 
-                        {!loading && query && results.length === 0 && (
-                            <div className="p-8 text-center text-[var(--text-muted)] text-sm">No users found for "{query}"</div>
+                        {results.length > 0 && (
+                            <div ref={bottomSentinelRef} className="h-10 flex items-center justify-center">
+                                {loadingMore && (
+                                    <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                )}
+                            </div>
                         )}
 
-                        {!query && (
-                            <div className="p-8 text-center text-[var(--text-muted)] text-sm italic">Type to search for users...</div>
+                        {!loading && query && results.length === 0 && (
+                            <div className="py-12 flex flex-col items-center justify-center text-center">
+                                <Search className="w-10 h-10 text-[var(--text-muted)] opacity-20 mb-3" />
+                                <div className="text-[var(--text-muted)] text-sm">No users found for "{query}"</div>
+                            </div>
+                        )}
+
+                        {!query && !loading && (
+                            <div className="py-12 flex flex-col items-center justify-center text-center">
+                                <Users className="w-10 h-10 text-indigo-500/20 mb-3" />
+                                <div className="text-[var(--text-muted)] text-sm italic font-medium">Type to search for users...</div>
+                                <div className="text-[var(--text-muted)] text-[10px] uppercase mt-1 opacity-50 tracking-widest">Connect with your friends</div>
+                            </div>
                         )}
                     </div>
                 </motion.div>
