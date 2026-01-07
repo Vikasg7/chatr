@@ -33,9 +33,7 @@ export default function ChatPage() {
   // WebRTC Logic
   const webRTC = useWebRTC({
     onSignal: (data) => {
-      if (chat.wsRef.current) {
-        chat.wsRef.current.send(JSON.stringify({ ...data, friendId: chat.currentFriendId }));
-      }
+      chat.sendSignal(data);
     },
     onStream: (stream) => {
       chat.setRemoteStream(stream);
@@ -125,13 +123,10 @@ export default function ChatPage() {
     chat.setActiveCallUserId(Number(currentFriendUser.id));
     webRTC.startCall(Number(currentFriendUser.id));
     // Send call type to peer
-    if (chat.wsRef.current) {
-      chat.wsRef.current.send(JSON.stringify({
-        type: 'call:type',
-        callType: 'audio',
-        friendId: chat.currentFriendId
-      }));
-    }
+    chat.sendSignal({
+      type: 'call:type',
+      callType: 'audio'
+    });
   };
 
   const handleStartVideoCall = () => {
@@ -145,40 +140,30 @@ export default function ChatPage() {
     chat.setActiveCallUserId(Number(currentFriendUser.id));
     webRTC.startCall(Number(currentFriendUser.id), true);
     // Send call type to peer
-    if (chat.wsRef.current) {
-      chat.wsRef.current.send(JSON.stringify({
-        type: 'call:type',
-        callType: 'video',
-        friendId: chat.currentFriendId
-      }));
-    }
+    chat.sendSignal({
+      type: 'call:type',
+      callType: 'video'
+    });
   };
 
   const handleEndCall = (duration?: string) => {
-    if (chat.wsRef.current) {
-      chat.wsRef.current.send(JSON.stringify({
-        type: "call:end",
-        friendId: chat.currentFriendId,
-        duration
-      }));
-    }
+    chat.sendSignal({
+      type: "call:end",
+      duration
+    });
     chat.setCallStatus('IDLE');
     chat.setRemoteStream(null);
     webRTC.cleanup();
   };
 
   const handleRejectCall = () => {
-    if (chat.wsRef.current) {
-      chat.wsRef.current.send(JSON.stringify({ type: "call:reject", friendId: chat.currentFriendId }));
-    }
+    chat.sendSignal({ type: "call:reject" });
     chat.setCallStatus('IDLE');
     webRTC.cleanup();
   };
 
   const handleCancelCall = () => {
-    if (chat.wsRef.current) {
-      chat.wsRef.current.send(JSON.stringify({ type: "call:cancel", friendId: chat.currentFriendId }));
-    }
+    chat.sendSignal({ type: "call:cancel" });
     chat.setCallStatus('IDLE');
     webRTC.cleanup();
   };
@@ -475,8 +460,20 @@ export default function ChatPage() {
               typingText={getTypingText()}
               onUnfriend={() => currentFriendship && chat.unfriend(currentFriendship.id)}
               isAccepted={currentFriendship?.status === "ACCEPTED"}
-              onCall={handleStartCall}
-              onVideoCall={handleStartVideoCall}
+              onCall={() => {
+                if (!chat.connected) {
+                  toastLib.showToast("Cannot call while offline", "error");
+                  return;
+                }
+                handleStartCall();
+              }}
+              onVideoCall={() => {
+                if (!chat.connected) {
+                  toastLib.showToast("Cannot call while offline", "error");
+                  return;
+                }
+                handleStartVideoCall();
+              }}
             />
 
             <MessageList

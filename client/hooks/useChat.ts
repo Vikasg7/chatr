@@ -158,119 +158,147 @@ export function useChat(token: string | null, user: any) {
     // WebSocket Setup - ONLY depends on token
     useEffect(() => {
         if (!token) return;
-        if (wsRef.current?.readyState === WebSocket.OPEN) return;
+        let reconnectTimeout: NodeJS.Timeout;
 
-        const ws = WS.create(token);
-        wsRef.current = ws;
+        const connect = () => {
+            if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-        ws.onopen = () => {
-            setConnected(true);
-            // Use ref for latest currentFriendId
-            if (stateRefs.current.currentFriendId) {
-                ws.send(JSON.stringify({ type: "chat:join", friendId: stateRefs.current.currentFriendId }));
-            }
-        };
+            const ws = WS.create(token);
+            wsRef.current = ws;
 
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const { callStatus: currentStatus, currentFriendId: cid, user: currentUser, friends: currentFriends } = stateRefs.current;
+            ws.onopen = () => {
+                setConnected(true);
+                // Use ref for latest currentFriendId
+                if (stateRefs.current.currentFriendId) {
+                    ws.send(JSON.stringify({ type: "chat:join", friendId: stateRefs.current.currentFriendId }));
+                }
+            };
 
-            if (data.type === "message:new") {
-                addMsg(data.message);
-                if (data.message.sender.id !== currentUser?.id) {
-                    const shouldNotify = !document.hasFocus() || data.message.friendId !== cid;
-                    if (shouldNotify && Notification.permission === 'granted') {
-                        const senderName = data.message.sender.name || data.message.sender.email.split('@')[0];
-                        const messageText = data.message.text || (data.message.attachmentType ? `Sent ${data.message.attachmentType.toLowerCase()}` : 'New message');
-                        const notification = new Notification(`${senderName}`, {
-                            body: messageText,
-                            icon: data.message.sender.avatarUrl || '/icon.png',
-                            tag: `msg-${data.message.id}`,
-                            requireInteraction: false
-                        });
-                        notification.onclick = () => { window.focus(); notification.close(); };
-                        setTimeout(() => notification.close(), 5000);
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const { callStatus: currentStatus, currentFriendId: cid, user: currentUser, friends: currentFriends } = stateRefs.current;
+
+                if (data.type === "message:new") {
+                    addMsg(data.message);
+                    if (data.message.sender.id !== currentUser?.id) {
+                        const shouldNotify = !document.hasFocus() || data.message.friendId !== cid;
+                        if (shouldNotify && Notification.permission === 'granted') {
+                            const senderName = data.message.sender.name || data.message.sender.email.split('@')[0];
+                            const messageText = data.message.text || (data.message.attachmentType ? `Sent ${data.message.attachmentType.toLowerCase()}` : 'New message');
+                            const notification = new Notification(`${senderName}`, {
+                                body: messageText,
+                                icon: data.message.sender.avatarUrl || '/icon.png',
+                                tag: `msg-${data.message.id}`,
+                                requireInteraction: false
+                            });
+                            notification.onclick = () => { window.focus(); notification.close(); };
+                            setTimeout(() => notification.close(), 5000);
+                        }
                     }
                 }
-            }
-            else if (data.type === "status:list") setOnlineUsers(new Set(data.users.map(Number))); // Force numbers
-            else if (data.type === "status:online") setOnlineUsers(prev => new Set(prev).add(Number(data.userId)));
-            else if (data.type === "status:offline") setOnlineUsers(prev => {
-                const next = new Set(prev);
-                next.delete(Number(data.userId));
-                return next;
-            });
-            else if (data.type === "message:react") {
-                setMessages(prev => prev.map(m => m.id === data.messageId ? { ...m, reactions: data.reactions } : m));
-            }
-            else if (data.type === "message:edit") {
-                setMessages(prev => prev.map(m => m.id === data.message.id ? data.message : m));
-            }
-            else if (data.type === "message:delete") {
-                setMessages(prev => prev.filter(m => m.id !== data.messageId));
-            }
-            else if (data.type === "friend:new") {
-                setFriends(prev => [...prev.filter(f => f.id !== data.friend.id), data.friend]);
-                toastLib.showToast("New friend request!", "info");
-            }
-            else if (data.type === "friend:updated") {
-                setFriends(prev => prev.map(f => f.id === data.friend.id ? data.friend : f));
-                if (data.friend.status === "ACCEPTED") toastLib.showToast("Friend request accepted!", "success");
-            }
-            else if (data.type === "friend:deleted") {
-                setFriends(prev => prev.filter(f => f.id !== data.friendId));
-                if (cid === data.friendId) {
-                    const otherId = data.senderId === currentUser?.id ? data.receiverId : data.senderId;
-                    setSelectedUserId(otherId);
-                    setCurrentFriendId(null);
-                    setMessages([]);
+                else if (data.type === "status:list") setOnlineUsers(new Set(data.users.map(Number))); // Force numbers
+                else if (data.type === "status:online") setOnlineUsers(prev => new Set(prev).add(Number(data.userId)));
+                else if (data.type === "status:offline") setOnlineUsers(prev => {
+                    const next = new Set(prev);
+                    next.delete(Number(data.userId));
+                    return next;
+                });
+                else if (data.type === "message:react") {
+                    setMessages(prev => prev.map(m => m.id === data.messageId ? { ...m, reactions: data.reactions } : m));
                 }
-                toastLib.showToast("Friendship removed", "info");
-            }
-            else if (data.type === "typing:start") setTypingUsers(prev => new Set(prev).add(data.userId));
-            else if (data.type === "typing:stop") setTypingUsers(prev => {
-                const next = new Set(prev);
-                next.delete(data.userId);
-                return next;
-            });
-            else if (data.type === "call:type") setCallType(data.callType);
-            else if (data.type === "call:request") {
-                if (currentStatus !== 'IDLE') {
-                    ws.send(JSON.stringify({ type: "call:reject", friendId: cid }));
-                    return;
+                else if (data.type === "message:edit") {
+                    setMessages(prev => prev.map(m => m.id === data.message.id ? data.message : m));
                 }
-                const friend = currentFriends.find(f => f.id === data.friendId);
-                const callerId = friend ? (friend.senderId === currentUser?.id ? friend.receiverId : friend.senderId) : null;
-                setActiveCallUserId(callerId);
-                setCallStatus('RINGING_IN');
-                if (signalHandlerRef.current) signalHandlerRef.current(data);
-            }
-            else if (data.type === "call:cancel" || data.type === "call:reject" || data.type === "call:end") {
-                setCallStatus('IDLE');
-                setActiveCallUserId(null);
-                setRemoteStream(null);
-                if (signalHandlerRef.current) signalHandlerRef.current(data);
-            }
-            else if (data.type === "call:answer") {
-                setCallStatus('ACTIVE');
-                if (signalHandlerRef.current) signalHandlerRef.current(data);
-            }
-            else if (data.type === "call:signal") {
-                if (signalHandlerRef.current) signalHandlerRef.current(data);
-            }
-            else if (data.type === "call:error") {
-                setCallStatus('IDLE');
-                setActiveCallUserId(null);
-                if (signalHandlerRef.current) signalHandlerRef.current(data);
-            }
+                else if (data.type === "message:delete") {
+                    setMessages(prev => prev.filter(m => m.id !== data.messageId));
+                }
+                else if (data.type === "friend:new") {
+                    setFriends(prev => [...prev.filter(f => f.id !== data.friend.id), data.friend]);
+                    toastLib.showToast("New friend request!", "info");
+                }
+                else if (data.type === "friend:updated") {
+                    setFriends(prev => prev.map(f => f.id === data.friend.id ? data.friend : f));
+                    if (data.friend.status === "ACCEPTED") toastLib.showToast("Friend request accepted!", "success");
+                }
+                else if (data.type === "friend:deleted") {
+                    setFriends(prev => prev.filter(f => f.id !== data.friendId));
+                    if (cid === data.friendId) {
+                        const otherId = data.senderId === currentUser?.id ? data.receiverId : data.senderId;
+                        setSelectedUserId(otherId);
+                        setCurrentFriendId(null);
+                        setMessages([]);
+                    }
+                    toastLib.showToast("Friendship removed", "info");
+                }
+                else if (data.type === "typing:start") setTypingUsers(prev => new Set(prev).add(data.userId));
+                else if (data.type === "typing:stop") setTypingUsers(prev => {
+                    const next = new Set(prev);
+                    next.delete(data.userId);
+                    return next;
+                });
+                else if (data.type === "call:type") setCallType(data.callType);
+                else if (data.type === "call:request") {
+                    if (currentStatus !== 'IDLE') {
+                        ws.send(JSON.stringify({ type: "call:reject", friendId: cid }));
+                        return;
+                    }
+                    const friend = currentFriends.find(f => f.id === data.friendId);
+                    const callerId = friend ? (friend.senderId === currentUser?.id ? friend.receiverId : friend.senderId) : null;
+                    setActiveCallUserId(callerId);
+                    setCallStatus('RINGING_IN');
+                    if (signalHandlerRef.current) signalHandlerRef.current(data);
+                }
+                else if (data.type === "call:cancel" || data.type === "call:reject" || data.type === "call:end") {
+                    setCallStatus('IDLE');
+                    setActiveCallUserId(null);
+                    setRemoteStream(null);
+                    if (signalHandlerRef.current) signalHandlerRef.current(data);
+                }
+                else if (data.type === "call:answer") {
+                    setCallStatus('ACTIVE');
+                    if (signalHandlerRef.current) signalHandlerRef.current(data);
+                }
+                else if (data.type === "call:signal") {
+                    if (signalHandlerRef.current) signalHandlerRef.current(data);
+                }
+                else if (data.type === "call:error") {
+                    setCallStatus('IDLE');
+                    setActiveCallUserId(null);
+                    if (signalHandlerRef.current) signalHandlerRef.current(data);
+                }
+            };
+
+            ws.onclose = () => {
+                setConnected(false);
+                setOnlineUsers(new Set()); // Clear online users when disconnected
+                reconnectTimeout = setTimeout(connect, 3000); // Try to reconnect after 3 seconds
+            };
+
+            ws.onerror = (err) => {
+                console.error("WebSocket error:", err);
+                ws.close();
+            };
         };
 
-        ws.onclose = () => setConnected(false);
+        connect();
 
         return () => {
-            ws.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            wsRef.current?.close();
         };
     }, [token]); // ONLY depend on token
+
+    const sendSignal = useCallback((data: any) => {
+        const ws = wsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ ...data, friendId: currentFriendId }));
+        } else {
+            console.warn("Could not send signal: WebSocket is not open", data.type);
+            if (data.type === 'call:request') {
+                toastLib.showToast("Connection lost. Reconnecting...", "error");
+            }
+        }
+    }, [currentFriendId]);
 
     const selectUser = useCallback(async (userId: number) => {
         const existing = friends.find(f => f.senderId === userId || f.receiverId === userId);
@@ -392,6 +420,7 @@ export function useChat(token: string | null, user: any) {
         loadMoreMessages,
         hasMoreFriends,
         loadingFriends,
-        loadMoreFriends
+        loadMoreFriends,
+        sendSignal
     };
 }
