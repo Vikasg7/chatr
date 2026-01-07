@@ -125,9 +125,15 @@ export class WSService {
             } as any,
             senderId: client.userId!,
             friendId: client.friendId,
+            replyToId: msg.replyToId ? Number(msg.replyToId) : undefined
           },
           include: {
             sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
+            replyTo: {
+              include: {
+                sender: { select: { id: true, name: true, email: true } }
+              }
+            }
           },
         });
 
@@ -152,7 +158,12 @@ export class WSService {
           data: { text: msg.text },
           include: {
             sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
-            reactions: { include: { user: { select: { id: true, name: true } } } }
+            reactions: { include: { user: { select: { id: true, name: true } } } },
+            replyTo: {
+              include: {
+                sender: { select: { id: true, name: true, email: true } }
+              }
+            }
           }
         });
 

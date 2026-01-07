@@ -140,6 +140,11 @@ export default (prisma: PrismaClient, wsService: WSService) => {
                 sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
                 reactions: {
                     include: { user: { select: { id: true, name: true } } }
+                },
+                replyTo: {
+                    include: {
+                        sender: { select: { id: true, name: true, email: true } }
+                    }
                 }
             }
         });

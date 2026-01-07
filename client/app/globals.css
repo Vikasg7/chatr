@@ -311,3 +311,23 @@ body {
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
 }
+
+/* Quoted message highlight animation */
+@keyframes msgHighlight {
+  0% {
+    box-shadow: 0 0 0 2px var(--accent-strong), 0 0 0 6px rgba(79, 70, 229, 0.4);
+  }
+
+  30% {
+    box-shadow: 0 0 0 2px var(--accent-strong), 0 0 0 10px rgba(79, 70, 229, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0px transparent, 0 0 0 0px transparent;
+  }
+}
+
+.highlight-msg {
+  animation: msgHighlight 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 50;
+}

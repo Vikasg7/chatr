@@ -104,6 +104,10 @@ model Message {
   room     Room?   @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   reactions Reaction[]
+
+  replyToId Int?
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[] @relation("MessageReplies")
 }
 
 model Reaction {

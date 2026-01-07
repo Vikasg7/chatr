@@ -11,6 +11,7 @@ interface MessageListProps {
   currentUserId: number | null;
   onReact?: (msgId: number, emoji: string) => void;
   onEdit?: (msg: any) => void;
+  onQuote?: (msg: any) => void;
   onDelete?: (msgId: number) => void;
   onAcceptInvite?: (inviteId: number) => void;
   onLoadMore?: () => void;
@@ -23,6 +24,7 @@ export function MessageList({
   currentUserId,
   onReact,
   onEdit,
+  onQuote,
   onDelete,
   onAcceptInvite,
   onLoadMore,
@@ -81,6 +83,15 @@ export function MessageList({
     }
     prevCountRef.current = messages.length;
   }, [messages, currentUserId]);
+
+  const scrollToMessage = (msgId: number) => {
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('highlight-msg');
+      setTimeout(() => el.classList.remove('highlight-msg'), 2000);
+    }
+  };
 
   return (
     <div
@@ -153,19 +164,37 @@ export function MessageList({
                   {/* Message Content Container */}
                   <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]`}>
                     <div
+                      id={`msg-${m.id}`}
                       className={`
-                        relative px-3 py-2 shadow-sm text-sm break-all group
+                        relative px-3 py-2 shadow-sm text-sm break-all group transition-colors duration-500
                         ${mine
                           ? 'bg-indigo-600 text-indigo-50 rounded-2xl rounded-tr-sm'
                           : 'bg-[var(--color-card)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm border border-[var(--border-subtle)]'}
                       `}
                     >
+                      {/* Quoted Message (Reply) */}
+                      {m.replyTo && (
+                        <div
+                          onClick={() => scrollToMessage(m.replyTo.id)}
+                          className={`
+                            mb-2 p-2 rounded-lg border-l-4 border-indigo-400 cursor-pointer transition-colors
+                            ${mine ? 'bg-indigo-700/50 hover:bg-indigo-700' : 'bg-[var(--border-subtle)] hover:bg-[var(--accent)]/10'}
+                          `}
+                        >
+                          <div className={`text-[10px] font-black uppercase tracking-widest mb-1 ${mine ? 'text-indigo-200' : 'text-indigo-500'}`}>
+                            {m.replyTo.sender?.name || m.replyTo.sender?.email?.split('@')[0]}
+                          </div>
+                          <div className={`text-xs truncate italic opacity-80 ${mine ? 'text-indigo-100' : 'text-[var(--text-muted)]'}`}>
+                            {m.replyTo.text || (m.replyTo.attachmentUrl ? "Attachment" : "...")}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Text Content */}
                       <div className="whitespace-pre-wrap leading-relaxed break-all">
                         {m.text}
                       </div>
 
-                      {/* Attachments */}
                       {/* Attachments */}
                       {m.attachmentUrl && (
                         <div className="mt-2 space-y-2">
@@ -189,7 +218,6 @@ export function MessageList({
                                 className="max-h-[300px] max-w-full rounded-lg"
                                 src={`${SERVER_URL}${m.attachmentUrl}`}
                               />
-                              {/* Fullscreen Button */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -292,53 +320,68 @@ export function MessageList({
                         </a>
                       )}
 
-                      {/* Reactions Trigger (Smiley Icon) - Only for other people's messages */}
-                      {!mine && (
-                        <div className="absolute top-1/2 -right-8 -translate-y-1/2">
-                          <button
-                            onClick={() => setActivePickerId(activePickerId === m.id ? null : m.id)}
-                            className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                            title="React"
-                          >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 group-hover:opacity-100 transition-opacity">
-                              <circle cx="12" cy="12" r="10" />
-                              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                              <circle cx="9" cy="9" r="0.5" fill="currentColor" />
-                              <circle cx="15" cy="9" r="0.5" fill="currentColor" />
-                            </svg>
-                          </button>
+                      {/* Message Actions (React, Quote, Edit, Delete) */}
+                      <div className={`
+                        absolute top-1/2 -translate-y-1/2 flex items-center gap-0
+                        opacity-0 group-hover:opacity-100 transition-all duration-200 z-30
+                        ${mine ? 'right-full mr-3 flex-row-reverse' : 'left-full ml-3 flex-row'}
+                      `}>
+                        {/* Reaction Trigger (Only for others) */}
+                        {!mine && (
+                          <div className="relative">
+                            <button
+                              onClick={() => setActivePickerId(activePickerId === m.id ? null : m.id)}
+                              className="p-1.5 text-[var(--text-muted)] hover:text-indigo-400 transition-colors"
+                              title="React"
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                              </svg>
+                            </button>
 
-                          <AnimatePresence>
-                            {activePickerId === m.id && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.9, y: 5 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.9, y: 5 }}
-                                className="absolute bottom-full mb-2 z-[110] flex items-center gap-0.5 p-1 bg-[var(--color-elevated)] backdrop-blur-xl border border-[var(--border-subtle)] rounded-full shadow-2xl left-0"
-                              >
-                                {["👍", "❤️", "😂", "😮", "😢", "🙏", "😘"].map(emoji => (
-                                  <button
-                                    key={emoji}
-                                    onClick={() => {
-                                      onReact?.(m.id, emoji);
-                                      setActivePickerId(null);
-                                    }}
-                                    className="hover:scale-125 transition text-xl leading-none p-1 active:scale-95"
-                                  >
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      )}
+                            <AnimatePresence>
+                              {activePickerId === m.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                  className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 p-1 bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-full shadow-2xl z-[110]"
+                                >
+                                  {["👍", "❤️", "😂", "😮", "😢", "🙏", "😘"].map(emoji => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => {
+                                        onReact?.(m.id, emoji);
+                                        setActivePickerId(null);
+                                      }}
+                                      className="hover:scale-125 transition text-xl leading-none p-1 active:scale-95"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        )}
 
-                      {/* Edit/Delete Actions (Only for my messages) - Using Icons now */}
-                      {mine && (
-                        <div className="absolute top-0 -left-14 h-full flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                        {/* Quote Action */}
+                        <button
+                          className="p-1.5 text-[var(--text-muted)] hover:text-indigo-400 transition-all"
+                          onClick={() => onQuote?.(m)}
+                          title="Quote"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 17 4 12 9 7"></polyline>
+                            <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                          </svg>
+                        </button>
+
+                        {/* Edit Action (Personal only) */}
+                        {mine && (
                           <button
-                            className="p-1 px-1 text-[var(--text-muted)] hover:text-indigo-400 hover:scale-110 transition-all"
+                            className="p-1.5 text-[var(--text-muted)] hover:text-emerald-400 transition-all"
                             onClick={() => onEdit?.(m)}
                             title="Edit"
                           >
@@ -347,8 +390,12 @@ export function MessageList({
                               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
                           </button>
+                        )}
+
+                        {/* Delete Action (Personal only) */}
+                        {mine && (
                           <button
-                            className="p-1 text-[var(--text-muted)] hover:text-red-400 hover:scale-110 transition-all"
+                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-400 transition-all"
                             onClick={() => onDelete?.(m.id)}
                             title="Delete"
                           >
@@ -357,10 +404,10 @@ export function MessageList({
                               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                             </svg>
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
-                      {/* Reactions Display (Transparent, floating) */}
+                      {/* Reactions Display */}
                       {m.reactions && m.reactions.length > 0 && (
                         <div className={`absolute -bottom-5 ${mine ? 'right-2' : 'left-2'} flex items-center gap-2 z-30 whitespace-nowrap`}>
                           {(Object.entries(m.reactions.reduce((acc: any, r: any) => {
@@ -389,7 +436,6 @@ export function MessageList({
                           })}
                         </div>
                       )}
-
                     </div>
                   </div>
                 </motion.div>

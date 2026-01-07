@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, LogOut, MessageSquare, ChevronDown, User, Palette } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface GlobalHeaderProps {
   onMenuClick?: () => void;
 }
 
-import { Menu, LogOut, MessageSquare } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle";
-
 export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   const { token, hydrated, user, setToken } = useAuthStore();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   function logout() {
@@ -27,8 +29,19 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
     }
   }, [hydrated, token]);
 
+  // Handle click outside to close menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <header className="app-header z-20 px-6 shadow-2xl">
+    <header className="app-header z-50 px-6 shadow-2xl relative">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <button
@@ -53,36 +66,97 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 sm:gap-6">
+      <div className="flex items-center gap-4">
         {hydrated && token ? (
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-bold text-[var(--text-primary)]">
-                {user?.name || user?.email?.split('@')[0]}
-              </span>
-              <span className="text-[10px] text-[var(--text-muted)] font-medium">
-                {user?.email}
-              </span>
-            </div>
-
-            <div className="w-[px] h-8 bg-[var(--border-subtle)] hidden sm:block" />
-
-            <ThemeToggle />
-
-            <div className="w-[1px] h-8 bg-[var(--border-subtle)]" />
-
+          <div className="relative" ref={menuRef}>
             <button
-              onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white font-bold text-xs uppercase tracking-wider transition-all border border-rose-500/10 hover:border-rose-500/20 active:scale-95"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className={`flex items-center gap-3 p-1.5 pl-3 rounded-2xl border transition-all active:scale-95 ${isMenuOpen
+                ? 'bg-[var(--accent)]/10 border-[var(--accent)] shadow-lg shadow-indigo-500/10'
+                : 'bg-[var(--color-card)] border-[var(--border-subtle)] hover:border-[var(--text-muted)]'
+                }`}
             >
-              <LogOut size={16} />
-              <span className="hidden xs:inline">Logout</span>
+              <div className="hidden sm:flex flex-col items-end mr-1">
+                <span className="text-sm font-black text-[var(--text-primary)] leading-none">
+                  {user?.name || user?.email?.split('@')[0]}
+                </span>
+                <span className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-wider mt-1 opacity-70">
+                  Online
+                </span>
+              </div>
+
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md ring-2 ring-white/10 overflow-hidden">
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  (user?.name?.[0] || user?.email?.[0] || "?").toUpperCase()
+                )}
+              </div>
+
+              <ChevronDown
+                size={16}
+                className={`text-[var(--text-muted)] transition-transform duration-300 ${isMenuOpen ? 'rotate-180 text-indigo-400' : ''}`}
+              />
             </button>
+
+            <AnimatePresence>
+              {isMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute right-0 mt-3 w-64 bg-[var(--color-elevated)] backdrop-blur-xl border border-[var(--border-subtle)] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden z-[1000]"
+                >
+                  <div className="p-4 border-bottom border-[var(--border-subtle)] bg-indigo-500/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black shadow-inner">
+                        {(user?.name?.[0] || user?.email?.[0] || "?").toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-black text-[var(--text-primary)] truncate">
+                          {user?.name || "Account"}
+                        </div>
+                        <div className="text-[10px] text-[var(--text-muted)] font-medium truncate">
+                          {user?.email}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2 space-y-1">
+                    <div className="flex items-center justify-between px-3 py-2.5 rounded-2xl hover:bg-[var(--accent)]/10 text-[var(--text-primary)] transition-all group cursor-default">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-[var(--color-card)] border border-[var(--border-subtle)] text-indigo-400 group-hover:scale-110 transition-transform">
+                          <Palette size={16} />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-wider">Appearance</span>
+                      </div>
+                      <ThemeToggle />
+                    </div>
+
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-rose-500/10 text-rose-400 transition-all group"
+                    >
+                      <div className="p-2 rounded-xl bg-rose-500/5 border border-rose-500/10 group-hover:bg-rose-500 group-hover:text-white group-hover:scale-110 transition-all">
+                        <LogOut size={16} />
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wider">Logout Session</span>
+                    </button>
+                  </div>
+
+                  <div className="px-4 py-3 bg-[var(--color-card)]/50 border-t border-[var(--border-subtle)] flex items-center justify-center">
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-50">Chatr Premium v1.0</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         ) : (
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Not signed in</span>
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest px-3 py-1 bg-[var(--border-subtle)]/30 rounded-full">Not signed in</span>
           </div>
         )}
       </div>

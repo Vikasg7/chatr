@@ -12,6 +12,8 @@ interface Message {
     attachmentUrl?: string;
     attachmentType?: string;
     metadata?: any;
+    replyToId?: number;
+    replyTo?: Message;
 }
 
 export function useChat(token: string | null, user: any) {
@@ -340,14 +342,15 @@ export function useChat(token: string | null, user: any) {
         } catch (e: any) { toastLib.showToast(e.message, "error"); }
     }, [currentFriendId]);
 
-    const sendMsg = useCallback((text: string, attachment?: { url: string; type: string; name?: string }) => {
+    const sendMsg = useCallback((text: string, attachment?: { url: string; type: string; name?: string }, replyToId?: number) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
         wsRef.current.send(JSON.stringify({
             type: "message:new",
             text,
             attachmentUrl: attachment?.url,
             attachmentType: attachment?.type,
-            attachmentName: attachment?.name
+            attachmentName: attachment?.name,
+            replyToId
         }));
     }, []);
 

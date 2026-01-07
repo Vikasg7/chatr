@@ -12,6 +12,8 @@ interface MsgInputProps {
   disabled?: boolean;
   isEditing?: boolean;
   onCancelEdit?: () => void;
+  quotingMessage?: any;
+  onCancelQuote?: () => void;
   friendshipStatus?: string;
   isSender?: boolean;
   onSendRequest?: () => void;
@@ -28,6 +30,8 @@ export function MsgInput({
   disabled,
   isEditing,
   onCancelEdit,
+  quotingMessage,
+  onCancelQuote,
   friendshipStatus,
   isSender,
   onSendRequest,
@@ -137,6 +141,28 @@ export function MsgInput({
 
   return (
     <div className="px-4 py-4 border-t border-[var(--border-subtle)] bg-[var(--color-elevated)] backdrop-blur-md transition-colors">
+      {/* Quoted Message Preview */}
+      {quotingMessage && (
+        <div className="mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center gap-3 p-2 bg-[var(--color-card)] border-l-4 border-indigo-500 rounded-lg relative group">
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-0.5">
+                Quoting {quotingMessage.sender?.name || quotingMessage.sender?.email?.split('@')[0]}
+              </div>
+              <div className="text-xs text-[var(--text-muted)] truncate italic">
+                "{quotingMessage.text || (quotingMessage.attachmentUrl ? "Attachment" : "...")}"
+              </div>
+            </div>
+            <button
+              onClick={onCancelQuote}
+              className="p-1 hover:bg-[var(--border-subtle)] rounded-full transition-colors"
+            >
+              <X size={14} className="text-[var(--text-muted)]" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Staged File Preview */}
       {stagedFile && (
         <div className="mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">

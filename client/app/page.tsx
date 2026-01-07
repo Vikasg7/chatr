@@ -195,20 +195,28 @@ export default function ChatPage() {
   // Input State
   const [input, setInput] = useState("");
   const [editingMessage, setEditingMessage] = useState<any>(null);
+  const [quotingMessage, setQuotingMessage] = useState<any>(null);
 
   const sendMsg = (attachment?: { url: string; type: string }) => {
     if (editingMessage) {
       chat.editMsg(editingMessage.id, input);
       setEditingMessage(null);
     } else {
-      chat.sendMsg(input, attachment);
+      chat.sendMsg(input, attachment, quotingMessage?.id);
+      setQuotingMessage(null);
     }
     setInput("");
   };
 
   const startEdit = (msg: any) => {
     setEditingMessage(msg);
+    setQuotingMessage(null);
     setInput(msg.text);
+  };
+
+  const startQuote = (msg: any) => {
+    setQuotingMessage(msg);
+    setEditingMessage(null);
   };
 
   // Layout State
@@ -518,6 +526,7 @@ export default function ChatPage() {
               currentUserId={user?.id || null}
               onReact={chat.sendReaction}
               onEdit={startEdit}
+              onQuote={startQuote}
               onDelete={chat.deleteMsg}
               onLoadMore={chat.loadMoreMessages}
               hasMore={chat.hasMoreMessages}
@@ -533,6 +542,8 @@ export default function ChatPage() {
                 disabled={!chat.connected}
                 isEditing={!!editingMessage}
                 onCancelEdit={() => { setEditingMessage(null); setInput(""); }}
+                quotingMessage={quotingMessage}
+                onCancelQuote={() => setQuotingMessage(null)}
                 friendshipStatus={currentFriendship.status}
                 isSender={currentFriendship.senderId === user?.id}
                 onSendRequest={() => chat.sendFriendRequest(selectedUser?.id)}
