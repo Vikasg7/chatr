@@ -2,6 +2,7 @@ import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import { WSService } from "../ws";
+import { deleteFile } from "../lib/file";
 
 export default (prisma: PrismaClient, wsService: WSService) => {
     const router = Router();
@@ -169,17 +170,38 @@ export default (prisma: PrismaClient, wsService: WSService) => {
             return res.status(403).json({ error: "Access denied" });
         }
 
-        // Manual cleanup to avoid FK constraints if migration isn't applied correctly
+        // 1. Gather all attachment URLs before deleting records
+        const messagesWithAttachments = await prisma.message.findMany({
+            where: {
+                friendId,
+                attachmentUrl: { not: null }
+            },
+            select: { attachmentUrl: true }
+        });
+
+        const urlsToDelete = messagesWithAttachments
+            .map(m => m.attachmentUrl)
+            .filter((url): url is string => !!url);
+
+        // 2. Perform DB cleanup (Manual cleanup to avoid FK constraints)
         await prisma.reaction.deleteMany({
             where: { message: { friendId } }
         });
         await prisma.message.deleteMany({
             where: { friendId }
         });
-
         await prisma.friend.delete({
             where: { id: friendId }
         });
+
+        // 3. Fire-and-forget file deletion in the background
+        if (urlsToDelete.length > 0) {
+            (async () => {
+                for (const url of urlsToDelete) {
+                    await deleteFile(url);
+                }
+            })().catch(err => console.error("Background file deletion error:", err));
+        }
 
         // Notify both parties
         wsService.sendToUser(friendship.senderId, {

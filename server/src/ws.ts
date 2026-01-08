@@ -3,6 +3,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { fetchMetadata } from './lib/metadata';
+import { deleteFile } from './lib/file';
+
 
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
@@ -204,6 +206,10 @@ export class WSService {
         if (!client.friendId || !msg.messageId) return;
         const message = await this.prisma.message.findUnique({ where: { id: msg.messageId } });
         if (!message || message.senderId !== client.userId) return;
+
+        if (message.attachmentUrl) {
+          await deleteFile(message.attachmentUrl);
+        }
 
         await this.prisma.reaction.deleteMany({ where: { messageId: msg.messageId } });
         await this.prisma.message.delete({ where: { id: msg.messageId } });
