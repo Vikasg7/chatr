@@ -88,8 +88,8 @@ app.use("/api/auth/login", authLimiter);
 
 app.use(express.json());
 
-// Serve uploads (use project root for consistency)
-app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+// Serve uploads (use project root with server/ prefix for monorepo)
+app.use("/uploads", express.static(path.join(process.cwd(), "server/public/uploads")));
 
 // simple health
 app.get("/health", (_req, res) => res.json({ ok: true }));
