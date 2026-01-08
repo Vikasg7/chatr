@@ -6,7 +6,7 @@ import toastLib from '@/lib/toast';
 
 export function useAuthForm() {
     const router = useRouter();
-    const { setToken, setUser } = useAuthStore();
+    const { setUser } = useAuthStore();
 
     const [mode, setMode] = useState<"login" | "signup">("login");
     const [loading, setLoading] = useState(false);
