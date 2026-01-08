@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import { WSService } from "../ws";
 import { deleteFile } from "../lib/file";
+import logger from "../lib/logger";
 
 export default (prisma: PrismaClient, wsService: WSService) => {
     const router = Router();
@@ -76,7 +77,7 @@ export default (prisma: PrismaClient, wsService: WSService) => {
                 friend: request
             });
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             res.status(500).json({ error: "Failed to send request" });
         }
     });
@@ -200,7 +201,7 @@ export default (prisma: PrismaClient, wsService: WSService) => {
                 for (const url of urlsToDelete) {
                     await deleteFile(url);
                 }
-            })().catch(err => console.error("Background file deletion error:", err));
+            })().catch(err => logger.error("Background file deletion error:", err));
         }
 
         // Notify both parties

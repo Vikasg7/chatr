@@ -11,6 +11,8 @@ import path from "path";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
+import morgan from "morgan";
+import logger from "./lib/logger";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -32,6 +34,13 @@ app.use(helmet({
 
 // ✅ Cookie Support
 app.use(cookieParser());
+
+// ✅ HTTP Request Logging
+app.use(morgan("combined", {
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
 
 // ✅ CORS configuration
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
@@ -74,5 +83,5 @@ app.use("/api/upload", uploadRouter);
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  logger.info(`Server listening on port ${PORT}`);
 });

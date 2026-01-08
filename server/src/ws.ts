@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { fetchMetadata } from './lib/metadata';
 import { deleteFile } from './lib/file';
+import logger from './lib/logger';
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
@@ -59,7 +60,7 @@ export class WSService {
 
       this.clients.set(id, { id, socket, userId });
       this.onlineUsers.add(userId);
-      console.log(`✅ WebSocket connected: ${id} (User: ${userId})`);
+      logger.info(`✅ WebSocket connected: ${id} (User: ${userId})`);
 
       socket.send(JSON.stringify({
         type: "status:list",
@@ -128,9 +129,9 @@ export class WSService {
 
         if (friendship && (friendship.senderId === client.userId || friendship.receiverId === client.userId)) {
           client.friendId = friendId;
-          console.log(`👤 User ${client.userId} joined chat ${friendId}`);
+          logger.info(`👤 User ${client.userId} joined chat ${friendId}`);
         } else {
-          console.warn(`🚨 Unauthorized join attempt: User ${client.userId} tried to join chat ${friendId}`);
+          logger.warn(`🚨 Unauthorized join attempt: User ${client.userId} tried to join chat ${friendId}`);
           client.socket.send(JSON.stringify({ type: "error", message: "Unauthorized join" }));
         }
         return;
@@ -321,7 +322,7 @@ export class WSService {
         }
       }
     } catch (err) {
-      console.error("WS error:", err);
+      logger.error("WS error:", err);
     }
   }
 

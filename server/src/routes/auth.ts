@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { requireAuth, AuthRequest } from "../middleware/auth";
+import logger from "../lib/logger";
 
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
@@ -39,7 +40,7 @@ export default function (prisma: PrismaClient) {
       res.cookie("chatr_token", token, COOKIE_OPTIONS);
       res.json({ user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       res.status(500).json({ error: "server error" });
     }
   });
@@ -65,7 +66,7 @@ export default function (prisma: PrismaClient) {
       res.cookie("chatr_token", token, COOKIE_OPTIONS);
       res.json({ user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       res.status(500).json({ error: "server error" });
     }
   });
@@ -150,7 +151,7 @@ export default function (prisma: PrismaClient) {
         }
       });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       res.status(500).json({ error: "Update failed" });
     }
   });

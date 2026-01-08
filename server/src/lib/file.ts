@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import logger from "./logger";
 
 const uploadDir = path.join(__dirname, "../../public/uploads");
 
@@ -20,11 +21,11 @@ export async function deleteFile(fileIdentifier: string | null | undefined): Pro
     try {
         if (fs.existsSync(filePath)) {
             await fs.promises.unlink(filePath);
-            console.log(`🗑️ Deleted file: ${filePath}`);
+            logger.info(`🗑️ Deleted file: ${filePath}`);
         } else {
-            console.warn(`⚠️ File not found for deletion: ${filePath}`);
+            logger.warn(`⚠️ File not found for deletion: ${filePath}`);
         }
     } catch (err) {
-        console.error(`❌ Error deleting file ${filePath}:`, err);
+        logger.error(`❌ Error deleting file ${filePath}:`, err);
     }
 }

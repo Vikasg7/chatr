@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
+import logger from "../lib/logger";
+
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
 export interface AuthRequest extends Request {
@@ -28,7 +30,7 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     req.userId = decoded.userId;
     next();
   } catch (err) {
-    console.error("JWT error", err);
+    logger.error("JWT error", err);
     return res.status(401).json({ error: "Invalid token" });
   }
 }

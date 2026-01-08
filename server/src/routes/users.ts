@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest, requireAuth } from "../middleware/auth";
+import logger from "../lib/logger";
 
 export default (prisma: PrismaClient) => {
   const router = Router();
@@ -34,7 +35,7 @@ export default (prisma: PrismaClient) => {
 
       res.json(users);
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       res.status(500).json({ error: "Failed to load users" });
     }
   });
