@@ -19,6 +19,7 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
     const [duration, setDuration] = useState(0);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
+    const [showLocalPreview, setShowLocalPreview] = useState(true);
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -31,6 +32,12 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
         } else {
             setDuration(0);
         }
+
+        // Reset local preview visibility whenever a call starts or ends
+        if (status !== 'IDLE') {
+            setShowLocalPreview(true);
+        }
+
         return () => clearInterval(interval);
     }, [status]);
 
@@ -97,23 +104,43 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                                 />
 
                                 {/* Local Video - Picture in Picture */}
-                                <div className="absolute bottom-2 right-2 w-24 h-18 rounded-lg overflow-hidden bg-[var(--color-card)] border-2 border-[var(--border-subtle)] shadow-lg">
-                                    {!localStream && (
-                                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-400">
-                                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                                </svg>
+                                <div className={`absolute bottom-2 right-2 overflow-hidden bg-[var(--color-card)] border-2 border-[var(--border-subtle)] shadow-lg transition-all duration-300 ${showLocalPreview ? 'w-24 h-18 rounded-lg' : 'w-8 h-8 rounded-full'}`}>
+                                    <button
+                                        onClick={() => setShowLocalPreview(!showLocalPreview)}
+                                        className={`z-20 p-1 bg-black/40 hover:bg-black/60 text-white transition-all flex items-center justify-center ${showLocalPreview ? 'absolute top-0 right-0' : 'absolute inset-0'}`}
+                                        title={showLocalPreview ? "Hide preview" : "Show preview"}
+                                    >
+                                        {showLocalPreview ? (
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                                            </svg>
+                                        ) : (
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        )}
+                                    </button>
+
+                                    <div className={`w-full h-full relative transition-opacity duration-300 ${showLocalPreview ? 'opacity-100' : 'opacity-0'}`}>
+                                        {!localStream && (
+                                            <div className="absolute inset-0 flex items-center justify-center z-10">
+                                                <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-400">
+                                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                                    </svg>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    <video
-                                        ref={localVideoRef}
-                                        autoPlay
-                                        playsInline
-                                        muted
-                                        className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-500 ${!localStream ? 'opacity-0' : 'opacity-100'}`}
-                                    />
+                                        )}
+                                        <video
+                                            ref={localVideoRef}
+                                            autoPlay
+                                            playsInline
+                                            muted
+                                            className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-500 ${!localStream ? 'opacity-0' : 'opacity-100'}`}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
