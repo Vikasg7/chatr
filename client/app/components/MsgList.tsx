@@ -55,11 +55,45 @@ const MessageItem = memo(({
 
       {/* Message Content Container */}
       <div className={`flex flex-col relative ${mine ? 'items-end' : 'items-start'} max-w-[calc(100%-140px)] sm:max-w-[75%] lg:max-w-[65%]`}>
+        {/* Emoji Picker - Moved here for edge safety */}
+        <AnimatePresence>
+          {activePickerId === m.id && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className={`
+                absolute bottom-full mb-3 flex items-center gap-1.5 p-2 
+                bg-[var(--color-elevated)] border border-[var(--border-subtle)] 
+                rounded-full shadow-2xl z-[500] backdrop-blur-md
+                ${mine ? 'right-0 origin-bottom-right' : 'left-0 origin-bottom-left'}
+              `}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {["👍", "❤️", "😂", "😮", "😢", "🙏", "😘"].map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReact?.(m.id, emoji);
+                    setActivePickerId(null);
+                  }}
+                  className="hover:scale-125 transition text-xl leading-none p-1 active:scale-95"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div
           id={`msg-${m.id}`}
-          onClick={() => {
+          onClick={(e) => {
             if (window.innerWidth < 768) {
+              e.stopPropagation();
               setActiveActionsId(activeActionsId === m.id ? null : m.id);
+              setActivePickerId(null); // Clear picker when switching messages
             }
           }}
           className={`
@@ -231,7 +265,10 @@ const MessageItem = memo(({
             {!mine && (
               <div className="relative">
                 <button
-                  onClick={() => setActivePickerId(activePickerId === m.id ? null : m.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActivePickerId(activePickerId === m.id ? null : m.id);
+                  }}
                   className="p-1.5 text-[var(--text-muted)] hover:text-indigo-400 transition-colors"
                   title="React"
                 >
@@ -240,42 +277,18 @@ const MessageItem = memo(({
                     <path d="M8 14s1.5 2 4 2 4-2 4-2" />
                   </svg>
                 </button>
-
-                <AnimatePresence>
-                  {activePickerId === m.id && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                      className={`
-                        absolute bottom-full mb-3 flex items-center gap-1 p-1.5 
-                        bg-[var(--color-elevated)] border border-[var(--border-subtle)] 
-                        rounded-full shadow-2xl z-[500] backdrop-blur-md
-                        ${mine ? 'right-0' : 'left-0'}
-                      `}
-                    >
-                      {["👍", "❤️", "😂", "😮", "😢", "🙏", "😘"].map(emoji => (
-                        <button
-                          key={emoji}
-                          onClick={() => {
-                            onReact?.(m.id, emoji);
-                            setActivePickerId(null);
-                          }}
-                          className="hover:scale-125 transition text-xl leading-none p-1 active:scale-95"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             )}
 
             {/* Quote Action */}
             <button
               className="p-1.5 text-[var(--text-muted)] hover:text-indigo-400 transition-all"
-              onClick={() => onQuote?.(m)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuote?.(m);
+                setActiveActionsId(null);
+                setActivePickerId(null);
+              }}
               title="Quote"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -288,7 +301,12 @@ const MessageItem = memo(({
             {mine && (
               <button
                 className="p-1.5 text-[var(--text-muted)] hover:text-emerald-400 transition-all"
-                onClick={() => onEdit?.(m)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(m);
+                  setActiveActionsId(null);
+                  setActivePickerId(null);
+                }}
                 title="Edit"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -302,7 +320,12 @@ const MessageItem = memo(({
             {mine && (
               <button
                 className="p-1.5 text-[var(--text-muted)] hover:text-rose-400 transition-all"
-                onClick={() => setDeleteMsgId(m.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteMsgId(m.id);
+                  setActiveActionsId(null);
+                  setActivePickerId(null);
+                }}
                 title="Delete"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -425,7 +448,13 @@ export function MessageList({
   const Footer = useCallback(() => <div className="h-4" />, []);
 
   return (
-    <div className="flex-1 bg-[var(--color-base)] relative min-w-0 h-full overflow-hidden">
+    <div
+      className="flex-1 bg-[var(--color-base)] relative min-w-0 h-full overflow-hidden"
+      onClick={() => {
+        setActiveActionsId(null);
+        setActivePickerId(null);
+      }}
+    >
       {!messages || messages.length === 0 ? (
         <div className="h-full flex items-center justify-center text-sm text-[var(--text-muted)]">
           {loadingMore ? (

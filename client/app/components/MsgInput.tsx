@@ -40,8 +40,16 @@ export function MsgInput({
   onFileConsumed
 }: MsgInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [stagedFile, setStagedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Autofocus input when quoting or editing
+  useEffect(() => {
+    if (quotingMessage || isEditing) {
+      inputRef.current?.focus();
+    }
+  }, [quotingMessage, isEditing]);
 
   // Handle external file from drag-and-drop
   useEffect(() => {
@@ -213,6 +221,7 @@ export function MsgInput({
 
         <div className="flex-1 input-wrap flex items-center shadow-inner focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all group">
           <input
+            ref={inputRef}
             className="bg-transparent flex-1 text-sm outline-none placeholder:text-slate-500 h-10"
             value={value}
             onChange={(e) => {
