@@ -41,6 +41,11 @@ export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWeb
         setConnectionState('new');
     }, []);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => cleanup();
+    }, [cleanup]);
+
     const mangleSdp = (sdp: string) => {
         // Force high-quality Opus bitrate (default is ~32kbps, we want ~128kbps)
         return sdp.replace(/a=fmtp:(\d+) (.*)/g, (match, pt, params) => {

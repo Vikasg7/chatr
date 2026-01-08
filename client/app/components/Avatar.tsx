@@ -33,7 +33,7 @@ function initials(name?: string | null, email?: string) {
   return "?";
 }
 
-export function Avatar({ name, email, src, size = 40, className = "", alt, online }: AvatarProps) {
+export const Avatar = React.memo(({ name, email, src, size = 40, className = "", alt, online }: AvatarProps) => {
   const fallback = initials(name, email);
   const seed = (name || email || "anon").toString();
   const hue = hashToHue(seed);
@@ -80,4 +80,4 @@ export function Avatar({ name, email, src, size = 40, className = "", alt, onlin
       )}
     </div>
   );
-}
+});

@@ -17,6 +17,15 @@ import logger from "./lib/logger";
 const app = express();
 const prisma = new PrismaClient();
 
+// ✅ Environment Validation
+const REQUIRED_ENV = ["JWT_SECRET", "DATABASE_URL"];
+for (const env of REQUIRED_ENV) {
+  if (!process.env[env]) {
+    logger.error(`❌ Missing required environment variable: ${env}`);
+    process.exit(1);
+  }
+}
+
 // ✅ HTTPS Enforcement (Production only)
 if (process.env.NODE_ENV === "production") {
   app.use((req, res, next) => {
@@ -56,12 +65,23 @@ app.use(cors({
 // ✅ Global Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 200, // Limit each IP to 200 requests per windowMs
   message: { error: "Too many requests from this IP, please try again after 15 minutes" },
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use("/api/", limiter);
+
+// ✅ Stricter Auth Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // Limit each IP to 10 signup/login requests per hour
+  message: { error: "Too many authentication attempts, please try again in an hour" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/auth/signup", authLimiter);
+app.use("/api/auth/login", authLimiter);
 
 app.use(express.json());
 
@@ -85,3 +105,23 @@ const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   logger.info(`Server listening on port ${PORT}`);
 });
+
+// ✅ Graceful Shutdown
+const shutdown = async (signal: string) => {
+  logger.info(`received ${signal}. shutting down gracefully.`);
+  server.close(async () => {
+    logger.info("HTTP server closed.");
+    await prisma.$disconnect();
+    logger.info("Prisma disconnected.");
+    process.exit(0);
+  });
+
+  // Force shutdown after 10s
+  setTimeout(() => {
+    logger.error("Could not close connections in time, forcefully shutting down");
+    process.exit(1);
+  }, 10000);
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

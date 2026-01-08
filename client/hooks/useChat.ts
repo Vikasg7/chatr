@@ -54,7 +54,15 @@ export function useChat(user: any) {
     }, []);
 
     const addMsg = useCallback((msg: Message) => {
-        setMessages(prev => [...prev, msg].sort((a, b) => a.id - b.id));
+        setMessages(prev => {
+            if (prev.some(m => m.id === msg.id)) return prev;
+            const next = [...prev, msg].sort((a, b) => a.id - b.id);
+            // ✅ Pruning: Keep only the latest 500 messages in memory
+            if (next.length > 500) {
+                return next.slice(next.length - 500);
+            }
+            return next;
+        });
     }, []);
 
     const selectFriend = useCallback(async (friendshipId: number, friendsOverride?: any[]) => {
@@ -96,7 +104,11 @@ export function useChat(user: any) {
             const limit = 50;
             const moreMsgs = await api.get(`/friends/${currentFriendId}/messages?beforeId=${firstMsgId}&limit=${limit}`);
             if (moreMsgs && moreMsgs.length > 0) {
-                setMessages(prev => [...moreMsgs, ...prev].sort((a, b) => a.id - b.id));
+                setMessages(prev => {
+                    const existingIds = new Set(prev.map(m => m.id));
+                    const filtered = moreMsgs.filter((m: Message) => !existingIds.has(m.id));
+                    return [...filtered, ...prev].sort((a, b) => a.id - b.id);
+                });
                 setHasMoreMessages(moreMsgs.length === limit);
             } else {
                 setHasMoreMessages(false);

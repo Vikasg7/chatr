@@ -14,6 +14,7 @@ export type Client = {
   socket: WebSocket;
   userId?: number;
   friendId?: number; // Linked to the active friendship chat
+  msgCount: number; // For rate limiting
 };
 
 export class WSService {
@@ -22,12 +23,24 @@ export class WSService {
   private prisma: PrismaClient;
   // Track connected user IDs
   private onlineUsers: Set<number> = new Set();
+  // 🔥 O(1) Lookups
+  private userToClients: Map<number, Set<string>> = new Map();
+  private friendToClients: Map<number, Set<string>> = new Map();
 
   constructor(server: any, prisma: PrismaClient) {
     this.prisma = prisma;
     this.wss = new WebSocketServer({ server });
     this.wss.on("connection", this.handleConnection.bind(this));
     this.setupHeartbeat();
+    this.setupRateLimitReset();
+  }
+
+  private setupRateLimitReset() {
+    setInterval(() => {
+      for (const client of this.clients.values()) {
+        client.msgCount = 0;
+      }
+    }, 10000); // Reset every 10s
   }
 
   private handleConnection(socket: WebSocket, req: any) {
@@ -58,8 +71,13 @@ export class WSService {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: any };
       const userId = Number(decoded.userId);
 
-      this.clients.set(id, { id, socket, userId });
+      this.clients.set(id, { id, socket, userId, msgCount: 0 });
       this.onlineUsers.add(userId);
+
+      // Add to user lookup
+      if (!this.userToClients.has(userId)) this.userToClients.set(userId, new Set());
+      this.userToClients.get(userId)!.add(id);
+
       logger.info(`✅ WebSocket connected: ${id} (User: ${userId})`);
 
       socket.send(JSON.stringify({
@@ -97,17 +115,24 @@ export class WSService {
   private handleSocketClose(senderId: string) {
     const client = this.clients.get(senderId);
     if (client && client.userId) {
-      let hasOtherConnections = false;
-      for (const [cid, c] of this.clients.entries()) {
-        if (cid !== senderId && c.userId === client.userId) {
-          hasOtherConnections = true;
-          break;
-        }
-      }
+      const userConnections = this.userToClients.get(client.userId);
+      const hasOtherConnections = userConnections && userConnections.size > 1;
 
       if (!hasOtherConnections) {
         this.onlineUsers.delete(client.userId);
+        this.userToClients.delete(client.userId);
         this.broadcast({ type: "status:offline", userId: client.userId });
+      } else {
+        // Just remove this specific connection
+        this.userToClients.get(client.userId)?.delete(senderId);
+      }
+
+      // Remove from friend lookup if active
+      if (client.friendId) {
+        this.friendToClients.get(client.friendId)?.delete(senderId);
+        if (this.friendToClients.get(client.friendId)?.size === 0) {
+          this.friendToClients.delete(client.friendId);
+        }
       }
     }
     this.clients.delete(senderId);
@@ -115,9 +140,17 @@ export class WSService {
 
   private async handleMessage(senderId: string, data: Buffer) {
     try {
-      const msg = JSON.parse(data.toString());
       const client = this.clients.get(senderId);
       if (!client || !client.userId) return;
+
+      // ✅ Basic Rate Limiting (Anti-Spam)
+      client.msgCount++;
+      if (client.msgCount > 30) { // Limit to 3 messages/sec on average
+        logger.warn(`🚫 Rate limit exceeded for user ${client.userId}`);
+        return;
+      }
+
+      const msg = JSON.parse(data.toString());
 
       if (msg.type === "chat:join") {
         const friendId = Number(msg.friendId);
@@ -128,7 +161,17 @@ export class WSService {
         });
 
         if (friendship && (friendship.senderId === client.userId || friendship.receiverId === client.userId)) {
+          // Leave previous room lookup if any
+          if (client.friendId) {
+            this.friendToClients.get(client.friendId)?.delete(senderId);
+          }
+
           client.friendId = friendId;
+
+          // Join new room lookup
+          if (!this.friendToClients.has(friendId)) this.friendToClients.set(friendId, new Set());
+          this.friendToClients.get(friendId)!.add(senderId);
+
           logger.info(`👤 User ${client.userId} joined chat ${friendId}`);
         } else {
           logger.warn(`🚨 Unauthorized join attempt: User ${client.userId} tried to join chat ${friendId}`);
@@ -337,8 +380,13 @@ export class WSService {
 
   broadcastToChat(friendId: number, payload: any, excludeClientId?: string) {
     const data = JSON.stringify(payload);
-    for (const client of this.clients.values()) {
-      if (client.friendId === friendId && client.socket.readyState === WebSocket.OPEN && client.id !== excludeClientId) {
+    const clientIds = this.friendToClients.get(friendId);
+    if (!clientIds) return;
+
+    for (const cid of clientIds) {
+      if (cid === excludeClientId) continue;
+      const client = this.clients.get(cid);
+      if (client && client.socket.readyState === WebSocket.OPEN) {
         client.socket.send(data);
       }
     }
@@ -346,8 +394,13 @@ export class WSService {
 
   sendToUser(userId: number, payload: any, excludeClientId?: string) {
     const data = JSON.stringify(payload);
-    for (const client of this.clients.values()) {
-      if (client.userId === userId && client.socket.readyState === WebSocket.OPEN && client.id !== excludeClientId) {
+    const clientIds = this.userToClients.get(userId);
+    if (!clientIds) return;
+
+    for (const cid of clientIds) {
+      if (cid === excludeClientId) continue;
+      const client = this.clients.get(cid);
+      if (client && client.socket.readyState === WebSocket.OPEN) {
         client.socket.send(data);
       }
     }

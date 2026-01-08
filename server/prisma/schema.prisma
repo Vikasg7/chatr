@@ -41,6 +41,7 @@ model Friend {
   messages  Message[]
 
   @@unique([senderId, receiverId])
+  @@index([receiverId])
 }
 
 model Room {
@@ -108,6 +109,11 @@ model Message {
   replyToId Int?
   replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id])
   replies   Message[] @relation("MessageReplies")
+
+  @@index([friendId])
+  @@index([roomId])
+  @@index([createdAt])
+  @@index([friendId, createdAt])
 }
 
 model Reaction {
@@ -122,4 +128,5 @@ model Reaction {
   message   Message @relation(fields: [messageId], references: [id])
 
   @@unique([userId, messageId, emoji])
+  @@index([messageId])
 }
