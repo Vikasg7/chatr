@@ -22,9 +22,9 @@ export function useAuthForm() {
 
         try {
             const res = await api.post("/auth/login", { email: e, password: p });
-            if (res && res.token) {
-                setToken(res.token);
+            if (res && res.user) {
                 setUser(res.user);
+                // Note: Token is now handled via HttpOnly cookie
                 toastLib.showToast("Signed in", "success");
                 router.replace("/");
             } else {
@@ -42,8 +42,12 @@ export function useAuthForm() {
         setLoading(true);
         try {
             const res = await api.post("/auth/signup", { name, email, password });
-            toastLib.showToast(res?.message || "Signup successful! Please login.", "success");
-            setMode("login");
+            if (res && res.user) {
+                toastLib.showToast("Signup successful! You can now login.", "success");
+                setMode("login");
+            } else {
+                toastLib.showToast(res?.error || "Signup failed", "error");
+            }
         } catch (err: any) {
             toastLib.errorToToast(err, "Signup failed");
         } finally {

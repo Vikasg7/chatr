@@ -31,7 +31,23 @@ export class WSService {
     const id = crypto.randomUUID();
 
     const url = new URL(req.url ?? "", `http://${req.headers.host}`);
-    const token = url.searchParams.get("token");
+
+    // ✅ Extract token from:
+    // 1. Sub-protocol header (Sec-WebSocket-Protocol)
+    // 2. HttpOnly Cookie
+    // 3. Query parameter (fallback for non-browser clients)
+    const protocolToken = req.headers['sec-websocket-protocol'];
+
+    let cookieToken = null;
+    if (req.headers.cookie) {
+      const cookies = req.headers.cookie.split('; ');
+      const tokenCookie = cookies.find((c: string) => c.trim().startsWith('chatr_token='));
+      if (tokenCookie) {
+        cookieToken = tokenCookie.split('=')[1];
+      }
+    }
+
+    const token = protocolToken || cookieToken || url.searchParams.get("token");
 
     if (!token) return;
 
@@ -101,7 +117,20 @@ export class WSService {
       if (!client || !client.userId) return;
 
       if (msg.type === "chat:join") {
-        client.friendId = msg.friendId;
+        const friendId = Number(msg.friendId);
+        // Authorization check: Verify user is part of this friendship
+        const friendship = await this.prisma.friend.findUnique({
+          where: { id: friendId },
+          select: { senderId: true, receiverId: true }
+        });
+
+        if (friendship && (friendship.senderId === client.userId || friendship.receiverId === client.userId)) {
+          client.friendId = friendId;
+          console.log(`👤 User ${client.userId} joined chat ${friendId}`);
+        } else {
+          console.warn(`🚨 Unauthorized join attempt: User ${client.userId} tried to join chat ${friendId}`);
+          client.socket.send(JSON.stringify({ type: "error", message: "Unauthorized join" }));
+        }
         return;
       }
 

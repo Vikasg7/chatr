@@ -21,14 +21,14 @@ import { CallOverlay } from "./components/CallOverlay";
 import { VideoCallOverlay } from "./components/VideoCallOverlay";
 
 export default function ChatPage() {
-  const { token, user, hydrated, setUser } = useAuthStore();
+  const { user, hydrated, setUser } = useAuthStore();
   const [ready, setReady] = useState(false);
 
   // Auth Form Logic
   const auth = useAuthForm();
 
   // Chat Logic
-  const chat = useChat(token, user);
+  const chat = useChat(user);
 
   // WebRTC Logic
   const webRTC = useWebRTC({
@@ -177,20 +177,30 @@ export default function ChatPage() {
   // Auth Verification
   useEffect(() => {
     if (!hydrated) return;
-    if (token === null) return;
+
+    // Always try to fetch 'me' on mount/hydration if we don't have a user,
+    // as the session token is now in an HttpOnly cookie.
     (async () => {
       try {
         const me = await api.get("/auth/me");
-        if (me) setUser(me);
+        if (me) {
+          setUser(me);
+        }
+      } catch (err) {
+        // Fallback: clear user if /me fails (e.g. cookie expired)
+        setUser(null);
+      } finally {
         setReady(true);
 
         // Request notification permission
         if ('Notification' in window && Notification.permission === 'default') {
-          await Notification.requestPermission();
+          try {
+            await Notification.requestPermission();
+          } catch (e) { }
         }
-      } catch (err) { }
+      }
     })();
-  }, [token, hydrated, setUser]);
+  }, [hydrated, setUser]);
 
   // Input State
   const [input, setInput] = useState("");
@@ -273,8 +283,8 @@ export default function ChatPage() {
     }
   }, [chat.selectedUserId, chat.friends, user?.id]);
 
-  // Loading Screen
-  if (!hydrated || (token && !ready)) {
+  // Loading Screen (Wait for hydration and /me check)
+  if (!hydrated || !ready) {
     return (
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[var(--color-base)] relative overflow-hidden">
         {/* Background Gradients */}
@@ -316,7 +326,7 @@ export default function ChatPage() {
   }
 
   // Auth Screen
-  if (!token) {
+  if (!user) {
     const handleAuthSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (auth.loading) return;

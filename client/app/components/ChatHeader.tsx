@@ -45,7 +45,7 @@ export function ChatHeader({
   }, []);
 
   return (
-    <div className="flex items-center justify-between pl-4 pr-3 md:pl-8 md:pr-4 py-token-3 border-b border-[var(--border-subtle)] bg-[var(--color-elevated)] transition-colors relative">
+    <div className="flex items-center justify-between pl-4 pr-3 md:pl-8 md:pr-4 py-token-2 border-b border-[var(--border-subtle)] bg-[var(--color-elevated)] transition-colors relative">
 
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-token-3">

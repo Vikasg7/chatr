@@ -6,18 +6,15 @@ export const SERVER_URL = `${protocol}://${serverHost}`;
 export const API_BASE = `${SERVER_URL}/api`;
 
 async function request(method: string, path: string, body?: any) {
-  const token = useAuthStore.getState().token;
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-
-  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: "include", // ✅ Send cookies with requests
   });
 
   // Handle unauthorized centrally: clear auth and surface an error
@@ -60,14 +57,13 @@ export async function del(path: string) {
 }
 
 export async function uploadFile(file: File) {
-  const token = useAuthStore.getState().token;
   const formData = new FormData();
   formData.append("file", file);
 
   const res = await fetch(`${API_BASE}/upload`, {
     method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
+    credentials: "include", // ✅ Send cookies with uploads
   });
 
   if (!res.ok) {

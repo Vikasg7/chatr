@@ -6,28 +6,34 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, LogOut, MessageSquare, ChevronDown, User, Palette } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import * as api from "@/lib/api";
 
 interface GlobalHeaderProps {
   onMenuClick?: () => void;
 }
 
 export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
-  const { token, hydrated, user, setToken } = useAuthStore();
+  const { hydrated, user, setUser } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  function logout() {
-    setToken(null);
+  async function logout() {
+    try {
+      await api.post("/auth/logout", {});
+    } catch (e) {
+      console.error("Logout failed on server", e);
+    }
+    setUser(null);
     router.push("/");
   }
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (hydrated && !token) {
+    if (hydrated && !user) {
       router.replace("/");
     }
-  }, [hydrated, token]);
+  }, [hydrated, user]);
 
   // Handle click outside to close menu
   useEffect(() => {
@@ -68,7 +74,7 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {hydrated && token ? (
+        {hydrated && user ? (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}

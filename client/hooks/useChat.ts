@@ -16,7 +16,7 @@ interface Message {
     replyTo?: Message;
 }
 
-export function useChat(token: string | null, user: any) {
+export function useChat(user: any) {
     const [connected, setConnected] = useState(false);
     const [friends, setFriends] = useState<any[]>([]);
     const [currentFriendId, setCurrentFriendId] = useState<number | null>(null);
@@ -104,7 +104,7 @@ export function useChat(token: string | null, user: any) {
 
     // Initial Data Load
     useEffect(() => {
-        if (!token) return;
+        if (!user) return;
         (async () => {
             setLoadingFriends(true);
             try {
@@ -120,10 +120,10 @@ export function useChat(token: string | null, user: any) {
                 setLoadingFriends(false);
             }
         })();
-    }, [token]);
+    }, [user?.id]);
 
     const loadMoreFriends = useCallback(async () => {
-        if (!token || !hasMoreFriends || loadingFriends) return;
+        if (!user || !hasMoreFriends || loadingFriends) return;
 
         setLoadingFriends(true);
         try {
@@ -143,7 +143,7 @@ export function useChat(token: string | null, user: any) {
         } catch (e) { console.error(e); } finally {
             setLoadingFriends(false);
         }
-    }, [token, hasMoreFriends, loadingFriends, friends.length]);
+    }, [user?.id, hasMoreFriends, loadingFriends, friends.length]);
 
     // Auto-sync selectFriend when selectedUserId is set
     useEffect(() => {
@@ -157,15 +157,15 @@ export function useChat(token: string | null, user: any) {
         }
     }, [friends, selectedUserId, currentFriendId, selectFriend]);
 
-    // WebSocket Setup - ONLY depends on token
+    // WebSocket Setup - depends on user presence
     useEffect(() => {
-        if (!token) return;
+        if (!user) return;
         let reconnectTimeout: NodeJS.Timeout;
 
         const connect = () => {
             if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-            const ws = WS.create(token);
+            const ws = WS.create();
             wsRef.current = ws;
 
             ws.onopen = () => {
@@ -294,7 +294,7 @@ export function useChat(token: string | null, user: any) {
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
             wsRef.current?.close();
         };
-    }, [token]); // ONLY depend on token
+    }, [user?.id]); // Depends on user presence
 
     const sendSignal = useCallback((data: any) => {
         const ws = wsRef.current;

@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { requireAuth, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -26,9 +27,25 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage,
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB strictly
+    fileFilter: (req: any, file: any, cb: any) => {
+        const allowedMimes = [
+            "image/jpeg", "image/png", "image/webp", "image/gif",
+            "video/mp4", "video/webm", "video/quicktime",
+            "audio/mpeg", "audio/wav", "audio/ogg", "audio/webm",
+            "text/plain", "text/markdown", "application/pdf",
+            "application/json", "text/csv", "application/zip",
+            "application/x-zip-compressed"
+        ];
+
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error("File type not allowed. Please upload images, videos, audio, or standard documents."), false);
+        }
+    }
 });
 
-router.post("/", upload.single("file"), (req: any, res) => {
+router.post("/", requireAuth, upload.single("file"), (req: AuthRequest, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
     }

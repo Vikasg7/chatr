@@ -8,13 +8,20 @@ export interface AuthRequest extends Request {
 }
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
-  const auth = req.headers.authorization;
+  // 1. Check cookies first
+  let token = req.cookies?.chatr_token;
 
-  if (!auth || !auth.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Missing or invalid token" });
+  // 2. Fallback to Authorization header
+  if (!token) {
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith("Bearer ")) {
+      token = auth.split(" ")[1];
+    }
   }
 
-  const token = auth.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ error: "Missing or invalid token" });
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
