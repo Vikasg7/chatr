@@ -65,9 +65,13 @@ export function useChat(user: any) {
             setSelectedUserId(otherUser?.id || null);
         }
         setCurrentFriendId(friendshipId);
-        // Important: Use direct reference to wsRef if available
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ type: "chat:join", friendId: friendshipId }));
+        }
+
+        // Save last opened inbox
+        if (user?.id) {
+            localStorage.setItem(`chatr-last-friend-${user.id}`, friendshipId.toString());
         }
 
         setLoadingMessages(true);
@@ -112,9 +116,17 @@ export function useChat(user: any) {
                 const f = await api.get(`/friends?limit=${limit}&offset=0`);
                 setFriends(f);
                 setHasMoreFriends(f.length === limit);
-                const firstAccepted = f.find((fr: any) => fr.status === "ACCEPTED");
-                if (firstAccepted && !currentFriendId) {
-                    selectFriend(firstAccepted.id, f);
+
+                // Try to restore last opened inbox
+                const lastFriendId = user?.id ? localStorage.getItem(`chatr-last-friend-${user.id}`) : null;
+                const savedId = lastFriendId ? parseInt(lastFriendId) : null;
+
+                const friendToSelect = savedId
+                    ? f.find((fr: any) => fr.id === savedId && fr.status === "ACCEPTED")
+                    : f.find((fr: any) => fr.status === "ACCEPTED");
+
+                if (friendToSelect && !currentFriendId) {
+                    selectFriend(friendToSelect.id, f);
                 }
             } catch (e) { console.error(e); } finally {
                 setLoadingFriends(false);
