@@ -142,15 +142,6 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
-@media (max-width: 768px) {
-  .group.flex.items-start.w-full {
-    padding-left: 1.5rem !important;
-    /* pl-6 */
-    padding-right: 1.5rem !important;
-    /* pr-6 */
-  }
-}
-
 .prose-constrained {
   max-width: 60ch;
   /* line length comfort */

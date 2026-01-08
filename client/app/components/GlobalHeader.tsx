@@ -41,7 +41,7 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   }, []);
 
   return (
-    <header className="app-header z-50 px-6 relative">
+    <header className="app-header z-50 px-3 md:px-6 relative">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <button

@@ -99,7 +99,7 @@ export function MessageList({
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 space-y-0 bg-[var(--color-base)] scroll-thin min-w-0"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-2 md:px-4 pb-4 space-y-0 bg-[var(--color-base)] scroll-thin min-w-0"
     >
       {messages.length === 0 ? (
         loadingMore ? (
@@ -157,7 +157,7 @@ export function MessageList({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.15 }}
-                  className={`group flex items-start gap-2.5 w-full ${mine ? 'flex-row-reverse pl-6 md:pl-20' : 'flex-row pr-6 md:pr-20'} ${marginClass}`}
+                  className={`group flex items-start gap-1 w-full py-1.5 px-0 md:px-0 ${mine ? 'flex-row-reverse' : 'flex-row'} ${marginClass}`}
                 >
                   {/* Time Marker - Only show for first in group */}
                   <div className={`w-6 flex-shrink-0 text-[10px] text-[var(--text-muted)] font-medium pt-2 ${mine ? 'text-left' : 'text-right'}`}>
@@ -165,7 +165,7 @@ export function MessageList({
                   </div>
 
                   {/* Message Content Container */}
-                  <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]`}>
+                  <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[calc(100%-140px)] sm:max-w-[70%] lg:max-w-[60%]`}>
                     <div
                       id={`msg-${m.id}`}
                       onClick={() => {
