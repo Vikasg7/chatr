@@ -116,42 +116,41 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
                   className="absolute right-0 w-64 bg-[var(--color-elevated)] border border-[var(--border-subtle)] overflow-hidden z-[1000]"
                   style={{ marginTop: 'var(--space-1)', borderRadius: 'var(--radius-xl)', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}
                 >
-                  <div className="border-bottom border-[var(--border-subtle)] bg-indigo-500/5" style={{ padding: 'var(--space-2) var(--space-3)' }}>
-                    <div className="flex items-center gap-token-2">
-                      <div className="w-10 h-10 bg-indigo-600 flex items-center justify-center text-white font-bold" style={{ borderRadius: '9999px' }}>
+                  <div className="border-b border-[var(--border-subtle)] bg-indigo-500/5 p-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-indigo-600 flex items-center justify-center text-white font-bold rounded-full shadow-inner ring-2 ring-white/10">
                         {(user?.name?.[0] || user?.email?.[0] || "?").toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-black text-[var(--text-primary)] truncate">
                           {user?.name || "Account"}
                         </div>
-                        <div className="text-[10px] text-[var(--text-muted)] font-medium truncate">
+                        <div className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-wider mt-0.5 opacity-60">
                           {user?.email}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-token-1 flex flex-col gap-1">
-                    <div className="flex items-center justify-between px-token-3 rounded-token-2xl hover:bg-[var(--accent)]/10 text-[var(--text-primary)] transition-all group cursor-default" style={{ paddingTop: 'calc(var(--space-1) * 1.5)', paddingBottom: 'calc(var(--space-1) * 1.5)' }}>
-                      <div className="flex items-center gap-token-2">
-                        <div className="p-token-1 rounded-token-lg bg-[var(--color-card)] border border-[var(--border-subtle)] text-indigo-400 group-hover:scale-110 transition-transform">
-                          <Palette size={16} />
+                  <div className="p-2 flex flex-col gap-1">
+                    <div className="flex items-center justify-between px-2 py-2.5 rounded-xl hover:bg-slate-500/5 text-[var(--text-primary)] transition-all group cursor-default">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-xl bg-[var(--color-card)] border border-[var(--border-subtle)] text-indigo-400 group-hover:scale-110 transition-transform shadow-sm">
+                          <Palette size={18} />
                         </div>
-                        <span className="text-xs font-bold uppercase tracking-wider">Appearance</span>
+                        <span className="text-[11px] font-black uppercase tracking-[0.1em]">Toggle Theme</span>
                       </div>
                       <ThemeToggle />
                     </div>
 
                     <button
                       onClick={logout}
-                      className="w-full flex items-center gap-token-2 px-token-3 rounded-token-2xl hover:bg-rose-500/10 text-rose-400 transition-all group"
-                      style={{ paddingTop: 'calc(var(--space-1) * 1.5)', paddingBottom: 'calc(var(--space-1) * 1.5)' }}
+                      className="w-full flex items-center gap-4 px-3 py-2.5 rounded-xl hover:bg-rose-500/10 text-rose-400 transition-all group"
                     >
-                      <div className="p-token-1 rounded-token-lg bg-rose-500/5 border border-rose-500/10 group-hover:bg-rose-500 group-hover:text-white group-hover:scale-110 transition-all">
-                        <LogOut size={16} />
+                      <div className="p-2 rounded-xl bg-rose-500/5 border border-rose-500/10 group-hover:bg-rose-500 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
+                        <LogOut size={18} />
                       </div>
-                      <span className="text-xs font-bold uppercase tracking-wider">Logout Session</span>
+                      <span className="text-[11px] font-black uppercase tracking-[0.1em]">Logout Session</span>
                     </button>
                   </div>
 
