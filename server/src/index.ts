@@ -88,8 +88,8 @@ app.use("/api/auth/login", authLimiter);
 
 app.use(express.json());
 
-// Serve uploads
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+// Serve uploads (use project root for consistency)
+app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
 
 // simple health
 app.get("/health", (_req, res) => res.json({ ok: true }));

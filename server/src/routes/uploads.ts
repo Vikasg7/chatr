@@ -7,7 +7,8 @@ import { requireAuth, AuthRequest } from "../middleware/auth";
 const router = Router();
 
 // Ensure uploads dir exists
-const uploadDir = path.join(__dirname, "../../public/uploads");
+// Use project root to ensure consistency between dev and production
+const uploadDir = path.join(process.cwd(), "public/uploads");
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }

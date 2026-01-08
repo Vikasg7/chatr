@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import logger from "./logger";
 
-const uploadDir = path.join(__dirname, "../../public/uploads");
+const uploadDir = path.join(process.cwd(), "public/uploads");
 
 /**
  * Deletes a file from the uploads directory given its URL or filename.
