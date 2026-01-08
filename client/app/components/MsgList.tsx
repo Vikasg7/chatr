@@ -45,7 +45,7 @@ const MessageItem = memo(({
   return (
     <div
       id={`msg-container-${m.id}`}
-      className={`group flex items-start gap-token-1 w-full px-0 ${mine ? 'flex-row-reverse text-right' : 'flex-row text-left'} ${marginClass}`}
+      className={`group flex items-start gap-token-1 w-full px-0 ${mine ? 'flex-row-reverse' : 'flex-row'} ${marginClass}`}
       style={{ paddingTop: 'calc(var(--space-1) * 0.75)', paddingBottom: 'calc(var(--space-1) * 0.75)' }}
     >
       {/* Time Marker - Only show for first in group */}
@@ -225,7 +225,7 @@ const MessageItem = memo(({
             absolute top-1/2 -translate-y-1/2 flex items-center gap-0
             transition-all duration-200 z-[40]
             ${activeActionsId === m.id ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95 md:group-hover:opacity-100 md:group-hover:visible md:group-hover:scale-100'}
-            ${mine ? 'right-full mr-3 flex-row-reverse' : 'left-full ml-3 flex-row'}
+            ${mine ? 'right-full mr-2 flex-row-reverse' : 'left-full ml-2 flex-row'}
           `}>
             {/* Reaction Trigger (Only for others) */}
             {!mine && (
@@ -247,7 +247,12 @@ const MessageItem = memo(({
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                      className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 p-1 bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-full shadow-2xl z-[110]"
+                      className={`
+                        absolute bottom-full mb-3 flex items-center gap-1 p-1.5 
+                        bg-[var(--color-elevated)] border border-[var(--border-subtle)] 
+                        rounded-full shadow-2xl z-[500] backdrop-blur-md
+                        ${mine ? 'right-0' : 'left-0'}
+                      `}
                     >
                       {["👍", "❤️", "😂", "😮", "😢", "🙏", "😘"].map(emoji => (
                         <button
@@ -446,7 +451,7 @@ export function MessageList({
             }
           }}
           itemContent={(index, m) => (
-            <div className="px-2 md:px-4 overflow-x-hidden w-full">
+            <div className="px-2 md:px-4 w-full">
               <MessageItem
                 m={m}
                 mine={m.mine}
