@@ -11,7 +11,7 @@ import { MessageList } from "./components/MsgList";
 import { MsgInput } from "./components/MsgInput";
 import { SearchUserModal } from "./components/SearchUserModal";
 import { motion } from 'framer-motion';
-import { LogIn, UserPlus, LogOut, UserMinus, Send, Search, User, Mail, Lock, Sparkles, Users, Plus, X, Paperclip } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, UserMinus, Send, Search, User, Mail, Lock, Sparkles, Users, Plus, X, Paperclip, MessageSquare } from 'lucide-react';
 
 // Hooks
 import { useChat } from "@/hooks/useChat";
@@ -298,7 +298,7 @@ export default function ChatPage() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="h-20 w-20 rounded-[24px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20 ring-4 ring-white/10"
           >
-            <Sparkles size={40} fill="white" className="animate-pulse" />
+            <MessageSquare size={40} fill="white" className="animate-pulse" />
           </motion.div>
 
           <div className="flex flex-col items-center">
