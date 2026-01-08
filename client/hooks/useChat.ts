@@ -220,7 +220,10 @@ export function useChat(token: string | null, user: any) {
                 }
                 else if (data.type === "friend:updated") {
                     setFriends(prev => prev.map(f => f.id === data.friend.id ? data.friend : f));
-                    if (data.friend.status === "ACCEPTED") toastLib.showToast("Friend request accepted!", "success");
+                    // Only toast if someone ELSE accepted our request
+                    if (data.friend.status === "ACCEPTED" && data.friend.senderId === currentUser?.id) {
+                        toastLib.showToast(`${data.friend.receiver?.name || 'Someone'} accepted your friend request!`, "success");
+                    }
                 }
                 else if (data.type === "friend:deleted") {
                     setFriends(prev => prev.filter(f => f.id !== data.friendId));
@@ -229,8 +232,11 @@ export function useChat(token: string | null, user: any) {
                         setSelectedUserId(otherId);
                         setCurrentFriendId(null);
                         setMessages([]);
+                        // Notify that the current chat session has ended due to unfriending (from the other side)
+                        if (data.deletedBy !== currentUser?.id) {
+                            toastLib.showToast("Friendship removed by the other user", "info");
+                        }
                     }
-                    toastLib.showToast("Friendship removed", "info");
                 }
                 else if (data.type === "typing:start") setTypingUsers(prev => new Set(prev).add(data.userId));
                 else if (data.type === "typing:stop") setTypingUsers(prev => {

@@ -41,7 +41,7 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   }, []);
 
   return (
-    <header className="app-header z-50 px-6 shadow-2xl relative">
+    <header className="app-header z-50 px-6 relative">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <button
@@ -106,7 +106,7 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute right-0 mt-3 w-64 bg-[var(--color-elevated)] backdrop-blur-xl border border-[var(--border-subtle)] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden z-[1000]"
+                  className="absolute right-0 mt-3 w-64 bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden z-[1000]"
                 >
                   <div className="p-4 border-bottom border-[var(--border-subtle)] bg-indigo-500/5">
                     <div className="flex items-center gap-3">

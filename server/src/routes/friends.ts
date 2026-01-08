@@ -49,7 +49,10 @@ export default (prisma: PrismaClient, wsService: WSService) => {
             });
 
             if (existing) {
-                return res.status(400).json({ error: "Friendship already exists or pending" });
+                const msg = existing.status === "PENDING"
+                    ? "Friend request is already pending."
+                    : "You are already friends with this user.";
+                return res.status(400).json({ error: msg });
             }
 
             const request = await prisma.friend.create({
@@ -183,13 +186,15 @@ export default (prisma: PrismaClient, wsService: WSService) => {
             type: "friend:deleted",
             friendId,
             senderId: friendship.senderId,
-            receiverId: friendship.receiverId
+            receiverId: friendship.receiverId,
+            deletedBy: userId
         });
         wsService.sendToUser(friendship.receiverId, {
             type: "friend:deleted",
             friendId,
             senderId: friendship.senderId,
-            receiverId: friendship.receiverId
+            receiverId: friendship.receiverId,
+            deletedBy: userId
         });
 
         res.json({ success: true });

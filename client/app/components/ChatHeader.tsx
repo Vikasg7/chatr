@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Phone, Video, UserMinus, Plus, MoreHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface ChatHeaderProps {
   connected: boolean;
@@ -30,6 +31,7 @@ export function ChatHeader({
   onVideoCall
 }: ChatHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showUnfriendConfirm, setShowUnfriendConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,7 +113,7 @@ export function ChatHeader({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="absolute right-0 mt-2 w-48 bg-[var(--color-elevated)] backdrop-blur-xl border border-[var(--border-subtle)] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] overflow-hidden z-[1000] p-1.5"
+                  className="absolute right-0 mt-2 w-48 bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden z-[1000] p-1.5"
                 >
                   {onInvite && (
                     <button
@@ -129,9 +131,7 @@ export function ChatHeader({
                   {onUnfriend && isAccepted && (
                     <button
                       onClick={() => {
-                        if (confirm("Are you sure you want to unfriend this user?")) {
-                          onUnfriend();
-                        }
+                        setShowUnfriendConfirm(true);
                         setIsMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-rose-500/10 text-rose-400 transition-all group"
@@ -146,6 +146,16 @@ export function ChatHeader({
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showUnfriendConfirm}
+        onClose={() => setShowUnfriendConfirm(false)}
+        onConfirm={onUnfriend || (() => { })}
+        title="Unfriend User?"
+        message={`Are you sure you want to remove ${roomName} from your friends? You won't be able to message them until you connect again.`}
+        confirmText="Unfriend"
+        type="danger"
+      />
     </div>
   );
 }

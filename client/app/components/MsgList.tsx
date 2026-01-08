@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as format from "@/lib/format";
 import { MediaViewer } from "./MediaViewer";
 import { SERVER_URL } from "@/lib/api";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface MessageListProps {
   messages: any[];
@@ -35,6 +36,8 @@ export function MessageList({
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const [activePickerId, setActivePickerId] = useState<number | null>(null);
   const [viewedMedia, setViewedMedia] = useState<{ url: string; type: "IMAGE" | "VIDEO" } | null>(null);
+  const [deleteMsgId, setDeleteMsgId] = useState<number | null>(null);
+  const [activeActionsId, setActiveActionsId] = useState<number | null>(null);
   const userId = currentUserId;
 
   const prevCountRef = useRef(messages.length);
@@ -165,8 +168,13 @@ export function MessageList({
                   <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]`}>
                     <div
                       id={`msg-${m.id}`}
+                      onClick={() => {
+                        if (window.innerWidth < 768) {
+                          setActiveActionsId(activeActionsId === m.id ? null : m.id);
+                        }
+                      }}
                       className={`
-                        relative px-3 py-2 shadow-sm text-sm break-all group transition-colors duration-500
+                        relative px-3 py-2 shadow-sm text-sm break-all group transition-colors duration-500 cursor-pointer md:cursor-default
                         ${mine
                           ? 'bg-indigo-600 text-indigo-50 rounded-2xl rounded-tr-sm'
                           : 'bg-[var(--color-card)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm border border-[var(--border-subtle)]'}
@@ -323,7 +331,8 @@ export function MessageList({
                       {/* Message Actions (React, Quote, Edit, Delete) */}
                       <div className={`
                         absolute top-1/2 -translate-y-1/2 flex items-center gap-0
-                        opacity-0 group-hover:opacity-100 transition-all duration-200 z-30
+                        transition-all duration-200 z-30
+                        ${activeActionsId === m.id ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95 md:group-hover:opacity-100 md:group-hover:visible md:group-hover:scale-100'}
                         ${mine ? 'right-full mr-3 flex-row-reverse' : 'left-full ml-3 flex-row'}
                       `}>
                         {/* Reaction Trigger (Only for others) */}
@@ -396,7 +405,7 @@ export function MessageList({
                         {mine && (
                           <button
                             className="p-1.5 text-[var(--text-muted)] hover:text-rose-400 transition-all"
-                            onClick={() => onDelete?.(m.id)}
+                            onClick={() => setDeleteMsgId(m.id)}
                             title="Delete"
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -450,6 +459,16 @@ export function MessageList({
         mediaUrl={viewedMedia?.url || null}
         mediaType={viewedMedia?.type || null}
         onClose={() => setViewedMedia(null)}
+      />
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={deleteMsgId !== null}
+        onClose={() => setDeleteMsgId(null)}
+        onConfirm={() => deleteMsgId && onDelete?.(deleteMsgId)}
+        title="Delete Message?"
+        message="This action cannot be undone. The message will be removed for everyone in this chat."
+        confirmText="Delete"
+        type="danger"
       />
     </div>
   );

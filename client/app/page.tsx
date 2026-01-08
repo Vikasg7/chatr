@@ -427,7 +427,7 @@ export default function ChatPage() {
           {/* Sidebar */}
           <aside
             onClick={(e) => e.stopPropagation()}
-            className={`w-72 border-r border-[var(--border-subtle)] bg-[var(--color-elevated)] px-4 py-4 flex flex-col fixed inset-y-0 left-0 z-40 transform transition-all duration-300 md:relative md:translate-x-0 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}
+            className={`w-72 border-r border-[var(--border-subtle)] bg-[var(--color-elevated)] px-4 py-4 flex flex-col fixed inset-y-0 md:inset-auto md:static left-0 z-[100] md:z-0 transform transition-all duration-300 md:translate-x-0 ${showSidebar ? 'translate-x-0' : '-translate-x-full'} top-16 md:top-0 h-[calc(100dvh-4rem)] md:h-full`}
           >
             <div className="flex flex-col h-full">
               <div className="mb-6 flex justify-between items-center">
