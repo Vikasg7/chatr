@@ -17,6 +17,9 @@ import logger from "./lib/logger";
 const app = express();
 const prisma = new PrismaClient();
 
+// ✅ Trust Render Proxy
+app.set('trust proxy', 1);
+
 // ✅ Environment Validation
 const REQUIRED_ENV = ["JWT_SECRET", "DATABASE_URL"];
 for (const env of REQUIRED_ENV) {

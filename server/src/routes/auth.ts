@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
+  sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
@@ -91,7 +91,7 @@ export default function (prisma: PrismaClient) {
     res.clearCookie("chatr_token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict"
+      sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const
     });
     res.json({ success: true });
   });
