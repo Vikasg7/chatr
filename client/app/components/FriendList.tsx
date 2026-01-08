@@ -50,7 +50,7 @@ export function FriendList({
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="space-y-1 flex-1 overflow-y-auto pr-1 scroll-thin"
+      className="flex-1 overflow-y-auto scroll-thin" style={{ display: 'flex', flexDirection: 'column', gap: 'calc(var(--space-1) * 0.5)', paddingRight: 'calc(var(--space-1) * 0.5)' }}
     >
       {friends.map((f) => {
         const active = currentFriendId === f.id;
@@ -69,14 +69,15 @@ export function FriendList({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.1 }}
-            className={`relative w-full rounded-xl text-sm font-medium
-              flex flex-row items-center gap-3 px-3 py-2 text-left transition-colors
+            className={`relative w-full rounded-token-lg text-sm font-medium
+              flex flex-row items-center gap-token-3 px-token-3 text-left transition-colors
               ${active
                 ? "bg-indigo-600 text-white shadow-sm"
                 : "text-[var(--text-muted)] hover:bg-[var(--border-subtle)]"
               }
               ${!isAccepted ? "opacity-60" : ""}
             `}
+            style={{ paddingTop: 'var(--space-1)', paddingBottom: 'var(--space-1)' }}
           >
             <div className="shrink-0">
               <Avatar

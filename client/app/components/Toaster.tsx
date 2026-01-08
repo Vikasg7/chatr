@@ -21,7 +21,7 @@ export default function Toaster() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-4 sm:inset-auto sm:left-6 sm:bottom-6 z-[100] flex flex-col items-center sm:items-start gap-3">
+    <div className="pointer-events-none fixed inset-x-4 bottom-4 sm:inset-auto sm:left-6 sm:bottom-6 z-[100] flex flex-col items-center sm:items-start gap-token-3">
       <AnimatePresence mode="popLayout">
         {toasts.map((t) => (
           <motion.div
@@ -34,7 +34,7 @@ export default function Toaster() {
             className="pointer-events-auto group relative"
           >
             <div className={`
-              relative flex flex-col min-w-[320px] max-w-[420px] overflow-hidden rounded-2xl border backdrop-blur-2xl transition-all duration-300
+              relative flex flex-col min-w-[320px] max-w-[420px] overflow-hidden rounded-token-2xl border backdrop-blur-2xl transition-all duration-300
               ${t.type === "error"
                 ? "bg-rose-500/10 border-rose-500/30 shadow-[0_8px_32px_rgba(244,63,94,0.15)]"
                 : t.type === "success"
@@ -42,12 +42,12 @@ export default function Toaster() {
                   : "bg-[var(--color-card)] border-[var(--border-subtle)] shadow-[0_8px_32px_rgba(2,6,23,0.3)]"}
             `}>
               {/* Content */}
-              <div className="flex items-start gap-4 p-4">
-                <div className="mt-1 flex-shrink-0">
+              <div className="flex items-start gap-token-2 p-token-2">
+                <div className="flex-shrink-0" style={{ marginTop: 'calc(var(--space-1) * 0.5)' }}>
                   <Icon type={t.type} />
                 </div>
 
-                <div className="flex-1 space-y-1">
+                <div className="flex-1" style={{ display: 'flex', flexDirection: 'column', gap: 'calc(var(--space-1) * 0.5)' }}>
                   <p className="text-sm font-semibold leading-relaxed text-[var(--text-primary)]">
                     {t.message}
                   </p>
@@ -60,7 +60,7 @@ export default function Toaster() {
                         try { t.action?.onClick(); } catch (e) { console.error(e); }
                         toastLib.dismissToast(t.id);
                       }}
-                      className="inline-flex items-center text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors pt-2"
+                      className="inline-flex items-center text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors" style={{ paddingTop: 'var(--space-1)' }}
                     >
                       {t.action.label}
                     </motion.button>
@@ -69,7 +69,7 @@ export default function Toaster() {
 
                 <button
                   onClick={() => toastLib.dismissToast(t.id)}
-                  className="mt-0.5 flex-shrink-0 rounded-lg p-1 text-slate-500 hover:bg-white/10 hover:text-slate-300 transition-all opacity-0 group-hover:opacity-100"
+                  className="flex-shrink-0 rounded-token-md p-token-1 text-slate-500 hover:bg-white/10 hover:text-slate-300 transition-all opacity-0 group-hover:opacity-100" style={{ marginTop: 'calc(var(--space-1) * 0.25)', padding: 'calc(var(--space-1) * 0.5)' }}
                   aria-label="Dismiss"
                 >
                   <X size={16} />

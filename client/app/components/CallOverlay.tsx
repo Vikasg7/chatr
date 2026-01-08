@@ -43,7 +43,7 @@ export function CallOverlay({ status, callerName, onAnswer, onReject, onCancel, 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm pointer-events-auto"
+                    className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
                     onClick={(e) => e.stopPropagation()}
                 />
 
@@ -51,7 +51,7 @@ export function CallOverlay({ status, callerName, onAnswer, onReject, onCancel, 
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative z-[201] w-80 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col items-center gap-6 pointer-events-auto"
+                    className="relative z-[201] w-80 bg-[var(--color-elevated)] backdrop-blur-xl border border-[var(--border-subtle)] rounded-3xl shadow-2xl p-6 flex flex-col items-center gap-6 pointer-events-auto"
                 >
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg animate-pulse">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -60,15 +60,15 @@ export function CallOverlay({ status, callerName, onAnswer, onReject, onCancel, 
                     </div>
 
                     <div className="text-center">
-                        <h3 className="text-lg font-bold text-white truncate w-full">{callerName || 'Unknown User'}</h3>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <h3 className="text-lg font-bold text-[var(--text-primary)] truncate w-full">{callerName || 'Unknown User'}</h3>
+                        <p className="text-sm text-[var(--text-muted)]" style={{ marginTop: 'calc(var(--space-1) * 0.5)' }}>
                             {status === 'RINGING_OUT' && 'Calling...'}
                             {status === 'RINGING_IN' && 'Incoming Audio Call'}
                             {status === 'ACTIVE' && formatDuration(duration)}
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-token-2">
                         {status === 'ACTIVE' && onToggleAudio && (
                             <button
                                 onClick={() => {
@@ -124,7 +124,7 @@ export function CallOverlay({ status, callerName, onAnswer, onReject, onCancel, 
                                     if (status === 'RINGING_OUT') onCancel();
                                     else onEnd(formatDuration(duration));
                                 }}
-                                className="px-8 py-3 rounded-full bg-red-500 hover:bg-red-400 text-white font-bold transition shadow-lg flex items-center gap-2"
+                                className="rounded-full bg-red-500 hover:bg-red-400 text-white font-bold transition shadow-lg flex items-center gap-token-2" style={{ paddingLeft: 'var(--space-4)', paddingRight: 'var(--space-4)', paddingTop: 'var(--space-3)', paddingBottom: 'var(--space-3)' }}
                             >
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
                                     <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 4.24 3.4"></path>

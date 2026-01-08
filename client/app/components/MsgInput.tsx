@@ -58,16 +58,17 @@ export function MsgInput({
 
   if (friendshipStatus !== "ACCEPTED") {
     return (
-      <div className="px-4 py-8 border-t border-[var(--border-subtle)] bg-[var(--color-elevated)] text-center">
+      <div className="px-token-2 border-t border-[var(--border-subtle)] bg-[var(--color-elevated)] text-center" style={{ paddingTop: 'var(--space-4)', paddingBottom: 'var(--space-4)' }}>
         {friendshipStatus === "PENDING" ? (
           <div className="flex flex-col items-center">
-            <p className="text-[var(--text-muted)] text-sm mb-4 font-medium italic">
+            <p className="text-[var(--text-muted)] text-sm font-medium italic" style={{ marginBottom: 'var(--space-2)' }}>
               {isSender ? "Friend request sent. Waiting for response..." : "This user wants to connect!"}
             </p>
             {!isSender && (
               <button
                 onClick={onAcceptRequest}
-                className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition shadow-lg shadow-emerald-900/20 active:scale-95"
+                className="flex items-center gap-token-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-token-lg font-bold transition shadow-lg shadow-emerald-900/20 active:scale-95"
+                style={{ paddingLeft: 'var(--space-6)', paddingRight: 'var(--space-6)', paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}
               >
                 <Check size={18} />
                 Accept Friend Request
@@ -76,10 +77,11 @@ export function MsgInput({
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <p className="text-[var(--text-muted)] text-sm mb-4 font-medium italic">You are not friends with this user yet.</p>
+            <p className="text-[var(--text-muted)] text-sm font-medium italic" style={{ marginBottom: 'var(--space-2)' }}>You are not friends with this user yet.</p>
             <button
               onClick={onSendRequest}
-              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-lg shadow-indigo-900/20 active:scale-95"
+              className="flex items-center gap-token-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-token-lg font-bold transition shadow-lg shadow-indigo-900/20 active:scale-95"
+              style={{ paddingLeft: 'var(--space-6)', paddingRight: 'var(--space-6)', paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}
             >
               <UserPlus size={18} />
               Send Friend Request

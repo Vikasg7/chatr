@@ -45,11 +45,12 @@ export function ChatHeader({
   }, []);
 
   return (
-    <div className="flex items-center justify-between px-3 md:px-6 py-3 border-b border-[var(--border-subtle)] bg-[var(--color-elevated)] transition-colors relative">
+    <div className="flex items-center justify-between pl-4 pr-3 md:pl-8 md:pr-4 py-token-3 border-b border-[var(--border-subtle)] bg-[var(--color-elevated)] transition-colors relative">
+
       <div className="flex flex-col min-w-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-token-3">
           <div className="text-h6 font-bold tracking-tight text-[var(--text-primary)] truncate leading-none">{roomName}</div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-token-2">
             <div
               className={`w-2 h-2 rounded-full shadow-sm transition-all duration-500 shrink-0 ${isOnline
                 ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]"
@@ -73,21 +74,21 @@ export function ChatHeader({
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-token-2">
         {/* Action Buttons */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-token-1">
           {onCall && (
             <>
               <button
                 onClick={onCall}
-                className="p-2 text-[var(--text-muted)] hover:text-indigo-400 hover:bg-[var(--border-subtle)] rounded-xl transition-all"
+                className="p-token-1 text-[var(--text-muted)] hover:text-indigo-400 hover:bg-[var(--border-subtle)] rounded-token-lg transition-all"
                 title="Start Audio Call"
               >
                 <Phone size={20} />
               </button>
               <button
                 onClick={onVideoCall}
-                className={`p-2 text-[var(--text-muted)] hover:text-indigo-400 hover:bg-[var(--border-subtle)] rounded-xl transition-all ${!onVideoCall ? 'cursor-not-allowed opacity-40' : ''}`}
+                className={`p-token-1 text-[var(--text-muted)] hover:text-indigo-400 hover:bg-[var(--border-subtle)] rounded-token-lg transition-all ${!onVideoCall ? 'cursor-not-allowed opacity-40' : ''}`}
                 title={onVideoCall ? "Start Video Call" : "Video call coming soon"}
                 disabled={!onVideoCall}
               >
@@ -100,7 +101,7 @@ export function ChatHeader({
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-xl transition-all ${isMenuOpen ? 'bg-[var(--border-subtle)] scale-110 text-indigo-400' : ''}`}
+              className={`p-token-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-token-lg transition-all ${isMenuOpen ? 'bg-[var(--border-subtle)] scale-110 text-indigo-400' : ''}`}
               title="More options"
             >
               <MoreHorizontal size={20} />
@@ -113,7 +114,7 @@ export function ChatHeader({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="absolute right-0 mt-2 w-48 bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden z-[1000] p-1.5"
+                  className="absolute right-0 w-48 bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-token-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden z-[1000]" style={{ marginTop: 'var(--space-1)', padding: 'calc(var(--space-1) * 0.75)' }}
                 >
                   {onInvite && (
                     <button

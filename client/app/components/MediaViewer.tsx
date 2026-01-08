@@ -41,7 +41,7 @@ export function MediaViewer({ mediaUrl, mediaType, onClose }: MediaViewerProps) 
                     {/* Close Button */}
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all z-10"
+                        className="absolute p-token-1 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all z-10" style={{ top: 'var(--space-2)', right: 'var(--space-2)' }}
                         title="Close (ESC)"
                     >
                         <X size={24} />
@@ -60,7 +60,7 @@ export function MediaViewer({ mediaUrl, mediaType, onClose }: MediaViewerProps) 
                             <img
                                 src={mediaUrl}
                                 alt="Fullscreen view"
-                                className="max-w-full max-h-[95vh] object-contain rounded-lg shadow-2xl"
+                                className="max-w-full max-h-[95vh] object-contain rounded-token-md shadow-2xl"
                             />
                         )}
 
@@ -69,7 +69,7 @@ export function MediaViewer({ mediaUrl, mediaType, onClose }: MediaViewerProps) 
                                 src={mediaUrl}
                                 controls
                                 autoPlay
-                                className="max-w-full max-h-[95vh] rounded-lg shadow-2xl"
+                                className="max-w-full max-h-[95vh] rounded-token-md shadow-2xl"
                             />
                         )}
                     </motion.div>

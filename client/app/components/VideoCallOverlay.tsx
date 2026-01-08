@@ -65,7 +65,7 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm pointer-events-auto"
+                    className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
                     onClick={(e) => e.stopPropagation()}
                 />
 
@@ -73,12 +73,12 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative z-[201] bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col items-center gap-6 pointer-events-auto max-w-4xl"
+                    className="relative z-[201] w-80 bg-[var(--color-elevated)] backdrop-blur-xl border border-[var(--border-subtle)] rounded-3xl shadow-2xl p-6 flex flex-col items-center gap-6 pointer-events-auto"
                 >
                     {status === 'ACTIVE' ? (
-                        <div className="flex gap-4">
-                            {/* Remote Video */}
-                            <div className="w-80 h-60 rounded-2xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center relative">
+                        <div className="relative w-full">
+                            {/* Remote Video - Main */}
+                            <div className="w-full h-48 rounded-2xl overflow-hidden bg-[var(--color-card)] border border-[var(--border-subtle)] flex items-center justify-center relative">
                                 {!remoteStream && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
                                         <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center animate-pulse">
@@ -86,7 +86,7 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                                                 <path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z" />
                                             </svg>
                                         </div>
-                                        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Connecting Stream</span>
+                                        <span className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-widest">Connecting Stream</span>
                                     </div>
                                 )}
                                 <video
@@ -95,27 +95,26 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                                     playsInline
                                     className={`w-full h-full object-cover transition-opacity duration-500 ${!remoteStream ? 'opacity-0' : 'opacity-100'}`}
                                 />
-                            </div>
-                            {/* Local Video */}
-                            <div className="w-80 h-60 rounded-2xl overflow-hidden bg-slate-950 border border-white/10 flex items-center justify-center relative">
-                                {!localStream && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
-                                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-400">
-                                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                            </svg>
+
+                                {/* Local Video - Picture in Picture */}
+                                <div className="absolute bottom-2 right-2 w-24 h-18 rounded-lg overflow-hidden bg-[var(--color-card)] border-2 border-[var(--border-subtle)] shadow-lg">
+                                    {!localStream && (
+                                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-400">
+                                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                                </svg>
+                                            </div>
                                         </div>
-                                        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Starting Camera</span>
-                                    </div>
-                                )}
-                                <video
-                                    ref={localVideoRef}
-                                    autoPlay
-                                    playsInline
-                                    muted
-                                    className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-500 ${!localStream ? 'opacity-0' : 'opacity-100'}`}
-                                />
+                                    )}
+                                    <video
+                                        ref={localVideoRef}
+                                        autoPlay
+                                        playsInline
+                                        muted
+                                        className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-500 ${!localStream ? 'opacity-0' : 'opacity-100'}`}
+                                    />
+                                </div>
                             </div>
                         </div>
                     ) : (
@@ -127,15 +126,15 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                     )}
 
                     <div className="text-center">
-                        <h3 className="text-lg font-bold text-white truncate w-full">{callerName || 'Unknown User'}</h3>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <h3 className="text-lg font-bold text-[var(--text-primary)] truncate w-full">{callerName || 'Unknown User'}</h3>
+                        <p className="text-sm text-[var(--text-muted)]" style={{ marginTop: 'calc(var(--space-1) * 0.5)' }}>
                             {status === 'RINGING_OUT' && 'Calling...'}
                             {status === 'RINGING_IN' && 'Incoming Video Call'}
                             {status === 'ACTIVE' && formatDuration(duration)}
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-token-2">
                         {status === 'ACTIVE' && (
                             <>
                                 {onToggleAudio && (
@@ -228,6 +227,6 @@ export function VideoCallOverlay({ status, callerName, localStream, remoteStream
                     </div>
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence >
     );
 }

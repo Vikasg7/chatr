@@ -41,12 +41,13 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
   }, []);
 
   return (
-    <header className="app-header z-50 px-3 md:px-6 relative">
+    <header className="app-header z-50 pl-1 pr-4 md:pr-5 md:pl-3 relative">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <button
           onClick={onMenuClick}
-          className="md:hidden p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-xl transition-all"
+          className="md:hidden hover:bg-[var(--border-subtle)] transition-colors"
+          style={{ padding: 'var(--space-1)', borderRadius: 'var(--radius-md)' }}
           aria-label="Toggle menu"
           title="Toggle Sidebar"
         >
@@ -106,11 +107,12 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute right-0 mt-3 w-64 bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden z-[1000]"
+                  className="absolute right-0 w-64 bg-[var(--color-elevated)] border border-[var(--border-subtle)] overflow-hidden z-[1000]"
+                  style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-xl)', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}
                 >
-                  <div className="p-4 border-bottom border-[var(--border-subtle)] bg-indigo-500/5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black shadow-inner">
+                  <div className="border-bottom border-[var(--border-subtle)] bg-indigo-500/5" style={{ padding: 'var(--space-2)' }}>
+                    <div className="flex items-center gap-token-3">
+                      <div className="w-10 h-10 bg-indigo-600 flex items-center justify-center text-white font-bold" style={{ borderRadius: '9999px' }}>
                         {(user?.name?.[0] || user?.email?.[0] || "?").toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -124,10 +126,10 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
                     </div>
                   </div>
 
-                  <div className="p-2 space-y-1">
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-2xl hover:bg-[var(--accent)]/10 text-[var(--text-primary)] transition-all group cursor-default">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-[var(--color-card)] border border-[var(--border-subtle)] text-indigo-400 group-hover:scale-110 transition-transform">
+                  <div className="p-token-1" style={{ display: 'flex', flexDirection: 'column', gap: 'calc(var(--space-1) * 0.5)' }}>
+                    <div className="flex items-center justify-between px-token-3 rounded-token-2xl hover:bg-[var(--accent)]/10 text-[var(--text-primary)] transition-all group cursor-default" style={{ paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}>
+                      <div className="flex items-center gap-token-3">
+                        <div className="p-token-1 rounded-token-lg bg-[var(--color-card)] border border-[var(--border-subtle)] text-indigo-400 group-hover:scale-110 transition-transform">
                           <Palette size={16} />
                         </div>
                         <span className="text-xs font-bold uppercase tracking-wider">Appearance</span>
@@ -137,9 +139,10 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
 
                     <button
                       onClick={logout}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-rose-500/10 text-rose-400 transition-all group"
+                      className="w-full flex items-center gap-token-3 px-token-3 rounded-token-2xl hover:bg-rose-500/10 text-rose-400 transition-all group"
+                      style={{ paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}
                     >
-                      <div className="p-2 rounded-xl bg-rose-500/5 border border-rose-500/10 group-hover:bg-rose-500 group-hover:text-white group-hover:scale-110 transition-all">
+                      <div className="p-token-1 rounded-token-lg bg-rose-500/5 border border-rose-500/10 group-hover:bg-rose-500 group-hover:text-white group-hover:scale-110 transition-all">
                         <LogOut size={16} />
                       </div>
                       <span className="text-xs font-bold uppercase tracking-wider">Logout Session</span>

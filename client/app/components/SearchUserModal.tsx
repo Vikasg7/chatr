@@ -95,21 +95,21 @@ export function SearchUserModal({
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-token-2 bg-black/60 backdrop-blur-sm">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="w-full max-w-md bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl overflow-hidden"
+                    className="w-full max-w-md bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-token-2xl shadow-2xl overflow-hidden"
                 >
-                    <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                    <div className="p-token-2 border-b border-[var(--border-subtle)] flex items-center justify-between">
                         <h2 className="text-lg font-semibold text-[var(--text-primary)]">Find People</h2>
-                        <button onClick={onClose} className="p-1 hover:bg-[var(--color-card)] rounded-lg transition-colors">
+                        <button onClick={onClose} className="p-token-1 hover:bg-[var(--color-card)] rounded-token-md transition-colors" style={{ padding: 'calc(var(--space-1) * 0.5)' }}>
                             <X className="w-5 h-5 text-[var(--text-muted)]" />
                         </button>
                     </div>
 
-                    <div className="p-4">
+                    <div className="p-token-2">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                             <input
@@ -118,14 +118,14 @@ export function SearchUserModal({
                                 placeholder="Search by name or email..."
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                className="w-full bg-[var(--color-card)] border border-[var(--border-subtle)] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                                className="w-full bg-[var(--color-card)] border border-[var(--border-subtle)] rounded-token-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" style={{ paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)', paddingLeft: 'calc(var(--space-2) * 2.5)', paddingRight: 'var(--space-2)' }}
                             />
                         </div>
                     </div>
 
-                    <div className="max-h-[300px] overflow-y-auto p-2 scroll-thin">
+                    <div className="max-h-[300px] overflow-y-auto p-token-1 scroll-thin">
                         {loading && (
-                            <div className="p-8 text-center text-[var(--text-muted)] text-sm">Searching...</div>
+                            <div className="text-center text-[var(--text-muted)] text-sm" style={{ padding: 'var(--space-4)' }}>Searching...</div>
                         )}
 
                         {!loading && results.length > 0 && results.map((user) => {
@@ -138,7 +138,7 @@ export function SearchUserModal({
                                         onSelect(user.id);
                                         onClose();
                                     }}
-                                    className="w-full p-3 flex items-center gap-3 rounded-xl hover:bg-[var(--color-card)] transition-colors group text-left"
+                                    className="w-full p-token-3 flex items-center gap-token-3 rounded-token-lg hover:bg-[var(--color-card)] transition-colors group text-left"
                                 >
                                     <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">
                                         {user.name?.[0] || user.email[0].toUpperCase()}

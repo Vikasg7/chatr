@@ -157,10 +157,10 @@ export function MessageList({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.15 }}
-                  className={`group flex items-start gap-1 w-full py-1.5 px-0 md:px-0 ${mine ? 'flex-row-reverse' : 'flex-row'} ${marginClass}`}
+                  className={`group flex items-start gap-token-1 w-full px-0 md:px-0 ${mine ? 'flex-row-reverse' : 'flex-row'} ${marginClass}`} style={{ paddingTop: 'calc(var(--space-1) * 0.75)', paddingBottom: 'calc(var(--space-1) * 0.75)' }}
                 >
                   {/* Time Marker - Only show for first in group */}
-                  <div className={`w-6 flex-shrink-0 text-[10px] text-[var(--text-muted)] font-medium pt-2 ${mine ? 'text-left' : 'text-right'}`}>
+                  <div className={`w-6 flex-shrink-0 text-[10px] text-[var(--text-muted)] font-medium ${mine ? 'text-left' : 'text-right'}`} style={{ paddingTop: 'var(--space-1)' }}>
                     {isFirstInGroup && format.time(m.createdAt)}
                   </div>
 
@@ -174,20 +174,22 @@ export function MessageList({
                         }
                       }}
                       className={`
-                        relative px-3 py-2 shadow-sm text-sm break-all group transition-colors duration-500 cursor-pointer md:cursor-default
+                        relative px-token-3 shadow-sm text-sm break-all group transition-colors duration-500 cursor-pointer md:cursor-default
                         ${mine
-                          ? 'bg-indigo-600 text-indigo-50 rounded-2xl rounded-tr-sm'
-                          : 'bg-[var(--color-card)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm border border-[var(--border-subtle)]'}
+                          ? 'bg-indigo-600 text-indigo-50 rounded-token-2xl rounded-tr-sm'
+                          : 'bg-[var(--color-card)] text-[var(--text-primary)] rounded-token-2xl rounded-tl-sm border border-[var(--border-subtle)]'}
                       `}
+                      style={{ paddingTop: 'var(--space-1)', paddingBottom: 'var(--space-1)' }}
                     >
                       {/* Quoted Message (Reply) */}
                       {m.replyTo && (
                         <div
                           onClick={() => scrollToMessage(m.replyTo.id)}
                           className={`
-                            mb-2 p-2 rounded-lg border-l-4 border-indigo-400 cursor-pointer transition-colors
+                            p-token-1 rounded-token-md border-l-4 border-indigo-400 cursor-pointer transition-colors
                             ${mine ? 'bg-indigo-700/50 hover:bg-indigo-700' : 'bg-[var(--border-subtle)] hover:bg-[var(--accent)]/10'}
                           `}
+                          style={{ marginBottom: 'var(--space-1)' }}
                         >
                           <div className={`text-[10px] font-black uppercase tracking-widest mb-1 ${mine ? 'text-indigo-200' : 'text-indigo-500'}`}>
                             {m.replyTo.sender?.name || m.replyTo.sender?.email?.split('@')[0]}
@@ -205,25 +207,25 @@ export function MessageList({
 
                       {/* Attachments */}
                       {m.attachmentUrl && (
-                        <div className="mt-2 space-y-2">
+                        <div style={{ marginTop: 'var(--space-1)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
                           {m.attachmentType === "IMAGE" && (
                             <div
-                              className="relative group/img overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)] cursor-pointer"
+                              className="relative group/img overflow-hidden rounded-token-lg border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)] cursor-pointer"
                               onClick={() => setViewedMedia({ url: `${SERVER_URL}${m.attachmentUrl}`, type: "IMAGE" })}
                             >
                               <img
                                 src={`${SERVER_URL}${m.attachmentUrl}`}
                                 alt="attachment"
-                                className="max-h-[300px] max-w-full object-contain rounded-lg transition-transform duration-500 group-hover/img:scale-105"
+                                className="max-h-[300px] max-w-full object-contain rounded-token-md transition-transform duration-500 group-hover/img:scale-105"
                               />
                             </div>
                           )}
 
                           {m.attachmentType === "VIDEO" && (
-                            <div className="relative group/video overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
+                            <div className="relative group/video overflow-hidden rounded-token-lg border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
                               <video
                                 controls
-                                className="max-h-[300px] max-w-full rounded-lg"
+                                className="max-h-[300px] max-w-full rounded-token-md"
                                 src={`${SERVER_URL}${m.attachmentUrl}`}
                               />
                               <button
@@ -231,7 +233,8 @@ export function MessageList({
                                   e.stopPropagation();
                                   setViewedMedia({ url: `${SERVER_URL}${m.attachmentUrl}`, type: "VIDEO" });
                                 }}
-                                className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover/video:opacity-100 transition-all z-10"
+                                className="absolute p-token-1 bg-black/60 hover:bg-black/80 text-white rounded-token-md opacity-0 group-hover/video:opacity-100 transition-all z-10"
+                                style={{ top: 'var(--space-1)', right: 'var(--space-1)' }}
                                 title="Open in fullscreen"
                               >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -242,8 +245,8 @@ export function MessageList({
                           )}
 
                           {m.attachmentType === "AUDIO" && (
-                            <div className="p-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--color-elevated)] shadow-inner min-w-[240px]">
-                              <div className="text-[10px] text-[var(--text-muted)] mb-1 flex items-center gap-1.5 px-1 truncate">
+                            <div className="p-token-1 rounded-token-lg border border-[var(--border-subtle)] bg-[var(--color-elevated)] shadow-inner min-w-[240px]">
+                              <div className="text-[10px] text-[var(--text-muted)] flex items-center gap-token-1 px-1 truncate" style={{ marginBottom: 'calc(var(--space-1) * 0.5)' }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                                 {m.metadata?.attachmentName || "Audio clip"}
                               </div>

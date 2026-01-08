@@ -51,30 +51,31 @@ export function ConfirmModal({
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/40">
+            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-token-2 bg-black/40">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="w-full max-w-sm bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-3xl shadow-2xl overflow-hidden"
+                    className="w-full max-w-sm bg-[var(--color-elevated)] border border-[var(--border-subtle)] rounded-token-3xl shadow-2xl overflow-hidden"
                 >
-                    <div className={`p-6 ${config.bg} flex flex-col items-center text-center border-b ${config.border}`}>
-                        <div className="mb-4 p-3 bg-[var(--color-card)] rounded-2xl shadow-inner group transition-transform hover:scale-110">
+                    <div className={`p-token-6 ${config.bg} flex flex-col items-center text-center border-b ${config.border}`} style={{ padding: 'var(--space-3)' }}>
+                        <div className="p-token-3 bg-[var(--color-card)] rounded-token-2xl shadow-inner group transition-transform hover:scale-110" style={{ marginBottom: 'var(--space-2)' }}>
                             {config.icon}
                         </div>
                         <h2 className="text-xl font-black text-[var(--text-primary)] tracking-tight">{title}</h2>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-token-6" style={{ padding: 'var(--space-3)' }}>
                         <p className="text-sm text-[var(--text-muted)] text-center leading-relaxed font-medium">
                             {message}
                         </p>
                     </div>
 
-                    <div className="p-4 bg-[var(--color-card)]/50 flex gap-3">
+                    <div className="p-token-2 bg-[var(--color-card)]/50 flex gap-token-3">
                         <button
                             onClick={onClose}
-                            className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)]/50 font-bold text-xs uppercase tracking-widest transition-all"
+                            className="flex-1 rounded-token-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-subtle)]/50 font-bold text-xs uppercase tracking-widest transition-all"
+                            style={{ paddingLeft: 'var(--space-2)', paddingRight: 'var(--space-2)', paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}
                         >
                             {cancelText}
                         </button>
@@ -83,7 +84,8 @@ export function ConfirmModal({
                                 onConfirm();
                                 onClose();
                             }}
-                            className={`flex-1 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 ${config.btn}`}
+                            className={`flex-1 rounded-token-lg font-bold text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 ${config.btn}`}
+                            style={{ paddingLeft: 'var(--space-2)', paddingRight: 'var(--space-2)', paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}
                         >
                             {confirmText}
                         </button>

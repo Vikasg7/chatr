@@ -22,7 +22,7 @@ export function ThemeToggle() {
     return (
         <button
             onClick={cycleTheme}
-            className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--border-subtle)] transition-all flex items-center justify-center border border-transparent hover:border-[var(--border-subtle)]/50"
+            className="p-token-1 rounded-token-lg text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--border-subtle)] transition-all flex items-center justify-center border border-transparent hover:border-[var(--border-subtle)]/50"
             title={`Current theme: ${theme}. Click to change.`}
         >
             <AnimatePresence mode="wait">
