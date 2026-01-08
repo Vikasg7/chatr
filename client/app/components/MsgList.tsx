@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, memo, useMemo, useCallback } from "react";
+import { useRef, useState, memo, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import * as format from "@/lib/format";
@@ -49,7 +49,7 @@ const MessageItem = memo(({
       style={{ paddingTop: 'calc(var(--space-1) * 0.75)', paddingBottom: 'calc(var(--space-1) * 0.75)' }}
     >
       {/* Time Marker - Only show for first in group */}
-      <div className={`w-10 shrink-0 text-[10px] text-[var(--text-muted)] font-medium ${mine ? 'text-left order-last pl-2' : 'text-right pr-2'}`} style={{ paddingTop: 'var(--space-1)' }}>
+      <div className={`w-8 shrink-0 text-[10px] text-[var(--text-muted)] font-medium ${mine ? 'text-left' : 'text-right'}`} style={{ paddingTop: 'var(--space-1)' }}>
         {isFirstInGroup && format.time(m.createdAt)}
       </div>
 
