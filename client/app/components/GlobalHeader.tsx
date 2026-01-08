@@ -64,12 +64,7 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
           <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-300 ring-2 ring-white/10">
             <MessageSquare size={22} fill="white" />
           </div>
-          <div className="flex flex-col">
-            <div className="text-xl font-black tracking-tight text-[var(--text-primary)] leading-none">Chatr</div>
-            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--text-muted)] mt-1">
-              Connect Securely
-            </div>
-          </div>
+          <div className="text-xl font-black tracking-tight text-[var(--text-primary)] leading-none">Chatr</div>
         </div>
       </div>
 

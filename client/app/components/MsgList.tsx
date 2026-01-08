@@ -109,15 +109,15 @@ const MessageItem = memo(({
             <div
               onClick={() => scrollToMessage(m.replyTo.id)}
               className={`
-                p-token-1 rounded-token-md border-l-4 border-indigo-400 cursor-pointer transition-colors
+                p-token-1 rounded-token-md border-l-4 border-indigo-400 cursor-pointer transition-colors min-w-0
                 ${mine ? 'bg-indigo-700/50 hover:bg-indigo-700' : 'bg-[var(--border-subtle)] hover:bg-[var(--accent)]/10'}
               `}
               style={{ marginBottom: 'var(--space-1)' }}
             >
-              <div className={`text-[10px] font-black uppercase tracking-widest mb-1 ${mine ? 'text-indigo-200' : 'text-indigo-500'}`}>
+              <div className={`text-[10px] font-black uppercase tracking-widest mb-1 truncate ${mine ? 'text-indigo-200' : 'text-indigo-500'}`}>
                 {m.replyTo.sender?.name || m.replyTo.sender?.email?.split('@')[0]}
               </div>
-              <div className={`text-xs truncate italic opacity-80 ${mine ? 'text-indigo-100' : 'text-[var(--text-muted)]'}`}>
+              <div className={`text-xs italic opacity-80 overflow-hidden text-ellipsis line-clamp-2 ${mine ? 'text-indigo-100' : 'text-[var(--text-muted)]'}`}>
                 {m.replyTo.text || (m.replyTo.attachmentUrl ? "Attachment" : "...")}
               </div>
             </div>
@@ -398,7 +398,6 @@ export function MessageList({
         align: 'center',
         behavior: 'smooth'
       });
-      // Add highlight effect after a short delay to allow for scroll
       setTimeout(() => {
         const el = document.getElementById(`msg-${msgId}`);
         if (el) {
@@ -434,7 +433,6 @@ export function MessageList({
     });
   }, [messages, userId]);
 
-  // Loading indicator for Virtuoso
   const Header = useCallback(() => {
     if (!loadingMore) return <div className="h-4" />;
     return (
@@ -445,7 +443,7 @@ export function MessageList({
     );
   }, [loadingMore]);
 
-  const Footer = useCallback(() => <div className="h-4" />, []);
+  const Footer = useCallback(() => <div className="h-8" />, []);
 
   return (
     <div
@@ -467,9 +465,9 @@ export function MessageList({
         <Virtuoso
           ref={virtuosoRef}
           data={enhancedMessages}
-          alignToBottom={true}
-          defaultItemHeight={80}
-          followOutput="auto"
+          initialTopMostItemIndex={enhancedMessages.length - 1}
+          followOutput="smooth"
+          alignToBottom
           computeItemKey={(index, item) => item.id}
           increaseViewportBy={200}
           className="flex-1 scroll-thin"
