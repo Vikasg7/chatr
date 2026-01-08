@@ -449,7 +449,7 @@ export function MessageList({
 
   return (
     <div
-      className="flex-1 bg-[var(--color-base)] relative min-w-0 h-full overflow-hidden"
+      className="flex-1 bg-[var(--color-base)] relative min-w-0 overflow-hidden"
       onClick={() => {
         setActiveActionsId(null);
         setActivePickerId(null);
@@ -467,9 +467,10 @@ export function MessageList({
         <Virtuoso
           ref={virtuosoRef}
           data={enhancedMessages}
-          followOutput="smooth"
+          alignToBottom={true}
+          defaultItemHeight={80}
+          followOutput="auto"
           computeItemKey={(index, item) => item.id}
-          initialTopMostItemIndex={messages.length - 1}
           increaseViewportBy={200}
           className="flex-1 scroll-thin"
           style={{ height: '100%', width: '100%', overflowX: 'hidden' }}

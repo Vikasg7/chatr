@@ -476,7 +476,7 @@ export default function ChatPage() {
           </aside>
 
           <section
-            className={`flex-1 flex flex-col relative min-w-0 transition-opacity duration-300 ${showSidebar ? 'opacity-50 md:opacity-100' : 'opacity-100'}`}
+            className={`flex-1 flex flex-col relative min-w-0 min-h-0 transition-opacity duration-300 ${showSidebar ? 'opacity-50 md:opacity-100' : 'opacity-100'}`}
             onDragEnter={(e) => {
               e.preventDefault();
               e.stopPropagation();
