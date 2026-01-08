@@ -114,10 +114,10 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="absolute right-0 w-64 bg-[var(--color-elevated)] border border-[var(--border-subtle)] overflow-hidden z-[1000]"
-                  style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-xl)', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}
+                  style={{ marginTop: 'var(--space-1)', borderRadius: 'var(--radius-xl)', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}
                 >
-                  <div className="border-bottom border-[var(--border-subtle)] bg-indigo-500/5" style={{ padding: 'var(--space-2)' }}>
-                    <div className="flex items-center gap-token-3">
+                  <div className="border-bottom border-[var(--border-subtle)] bg-indigo-500/5" style={{ padding: 'var(--space-2) var(--space-3)' }}>
+                    <div className="flex items-center gap-token-2">
                       <div className="w-10 h-10 bg-indigo-600 flex items-center justify-center text-white font-bold" style={{ borderRadius: '9999px' }}>
                         {(user?.name?.[0] || user?.email?.[0] || "?").toUpperCase()}
                       </div>
@@ -132,9 +132,9 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
                     </div>
                   </div>
 
-                  <div className="p-token-1" style={{ display: 'flex', flexDirection: 'column', gap: 'calc(var(--space-1) * 0.5)' }}>
-                    <div className="flex items-center justify-between px-token-3 rounded-token-2xl hover:bg-[var(--accent)]/10 text-[var(--text-primary)] transition-all group cursor-default" style={{ paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}>
-                      <div className="flex items-center gap-token-3">
+                  <div className="p-token-1 flex flex-col gap-1">
+                    <div className="flex items-center justify-between px-token-3 rounded-token-2xl hover:bg-[var(--accent)]/10 text-[var(--text-primary)] transition-all group cursor-default" style={{ paddingTop: 'calc(var(--space-1) * 1.5)', paddingBottom: 'calc(var(--space-1) * 1.5)' }}>
+                      <div className="flex items-center gap-token-2">
                         <div className="p-token-1 rounded-token-lg bg-[var(--color-card)] border border-[var(--border-subtle)] text-indigo-400 group-hover:scale-110 transition-transform">
                           <Palette size={16} />
                         </div>
@@ -145,8 +145,8 @@ export default function GlobalHeader({ onMenuClick }: GlobalHeaderProps) {
 
                     <button
                       onClick={logout}
-                      className="w-full flex items-center gap-token-3 px-token-3 rounded-token-2xl hover:bg-rose-500/10 text-rose-400 transition-all group"
-                      style={{ paddingTop: 'calc(var(--space-1) * 1.25)', paddingBottom: 'calc(var(--space-1) * 1.25)' }}
+                      className="w-full flex items-center gap-token-2 px-token-3 rounded-token-2xl hover:bg-rose-500/10 text-rose-400 transition-all group"
+                      style={{ paddingTop: 'calc(var(--space-1) * 1.5)', paddingBottom: 'calc(var(--space-1) * 1.5)' }}
                     >
                       <div className="p-token-1 rounded-token-lg bg-rose-500/5 border border-rose-500/10 group-hover:bg-rose-500 group-hover:text-white group-hover:scale-110 transition-all">
                         <LogOut size={16} />
