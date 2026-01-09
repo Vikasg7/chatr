@@ -86,10 +86,16 @@ const authLimiter = rateLimit({
 app.use("/api/auth/signup", authLimiter);
 app.use("/api/auth/login", authLimiter);
 
+
 app.use(express.json());
 
 // Serve uploads (use project root with server/ prefix for monorepo)
-app.use("/uploads", express.static(path.join(process.cwd(), "server/public/uploads")));
+// Add headers to support video streaming with range requests
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day cache
+  next();
+}, express.static(path.join(process.cwd(), "server/public/uploads")));
 
 // simple health
 app.get("/health", (_req, res) => res.json({ ok: true }));

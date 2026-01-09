@@ -148,7 +148,8 @@ const MessageItem = memo(({
                 <div className="relative group/video overflow-hidden rounded-token-lg border border-[var(--border-subtle)] shadow-lg bg-[var(--color-elevated)]">
                   <video
                     controls
-                    className="max-h-[300px] max-w-full rounded-token-md"
+                    className="w-full max-h-[400px] rounded-token-md"
+                    style={{ minWidth: '280px' }}
                     src={`${SERVER_URL}${m.attachmentUrl}`}
                   />
                   <button
