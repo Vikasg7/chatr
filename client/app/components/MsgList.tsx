@@ -137,6 +137,7 @@ const MessageItem = memo(({
                 >
                   <img
                     src={`${SERVER_URL}${m.attachmentUrl}`}
+                    crossOrigin="anonymous"
                     alt="attachment"
                     className="max-h-[300px] max-w-full object-contain rounded-token-md transition-transform duration-500 group-hover/img:scale-105"
                   />
@@ -152,6 +153,7 @@ const MessageItem = memo(({
                     className="w-full max-h-[400px] rounded-token-md bg-black"
                     style={{ minWidth: '280px' }}
                     src={`${SERVER_URL}${m.attachmentUrl}#t=0.001`}
+                    crossOrigin="anonymous"
                   />
                   <button
                     onClick={(e) => {

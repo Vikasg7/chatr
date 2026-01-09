@@ -94,6 +94,7 @@ app.use(express.json());
 app.use("/uploads", (req, res, next) => {
   res.setHeader("Accept-Ranges", "bytes");
   res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 }, express.static(path.join(__dirname, "../public/uploads")));
 

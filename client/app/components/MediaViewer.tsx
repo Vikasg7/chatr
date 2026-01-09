@@ -59,6 +59,7 @@ export function MediaViewer({ mediaUrl, mediaType, onClose }: MediaViewerProps) 
                         {mediaType === "IMAGE" && (
                             <img
                                 src={mediaUrl}
+                                crossOrigin="anonymous"
                                 alt="Fullscreen view"
                                 className="max-w-full max-h-[95vh] object-contain rounded-token-md shadow-2xl"
                             />
@@ -67,6 +68,7 @@ export function MediaViewer({ mediaUrl, mediaType, onClose }: MediaViewerProps) 
                         {mediaType === "VIDEO" && (
                             <video
                                 src={`${mediaUrl}#t=0.001`}
+                                crossOrigin="anonymous"
                                 controls
                                 autoPlay
                                 playsInline
