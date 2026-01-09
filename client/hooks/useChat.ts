@@ -36,6 +36,8 @@ export function useChat(user: any) {
     const wsRef = useRef<WebSocket | null>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const signalHandlerRef = useRef<((data: any) => void) | null>(null);
+    const currentFriendIdRef = useRef<number | null>(null);
+    const messagesRef = useRef<any[]>([]);
 
     // Refs to hold latest state for the WebSocket onmessage handler (avoids closure issues without reconnects)
     const stateRefs = useRef({
@@ -47,7 +49,12 @@ export function useChat(user: any) {
 
     useEffect(() => {
         stateRefs.current = { callStatus, currentFriendId, user, friends };
+        currentFriendIdRef.current = currentFriendId;
     }, [callStatus, currentFriendId, user, friends]);
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     const setSignalHandler = useCallback((handler: (data: any) => void) => {
         signalHandlerRef.current = handler;
@@ -297,6 +304,35 @@ export function useChat(user: any) {
                     setCallStatus('IDLE');
                     setActiveCallUserId(null);
                     if (signalHandlerRef.current) signalHandlerRef.current(data);
+                }
+            };
+
+            ws.onopen = async () => {
+                setConnected(true);
+
+                // Rejoin current chat if we have one
+                if (currentFriendIdRef.current) {
+                    ws.send(JSON.stringify({ type: "chat:join", friendId: currentFriendIdRef.current }));
+
+                    // Fetch any messages missed during disconnection
+                    try {
+                        const lastMsgId = messagesRef.current.length > 0
+                            ? Math.max(...messagesRef.current.map(m => m.id))
+                            : 0;
+
+                        if (lastMsgId > 0) {
+                            const newMsgs = await api.get(`/friends/${currentFriendIdRef.current}/messages?since=${lastMsgId}`);
+                            if (newMsgs && newMsgs.length > 0) {
+                                setMessages(prev => {
+                                    const existingIds = new Set(prev.map(m => m.id));
+                                    const filtered = newMsgs.filter((m: any) => !existingIds.has(m.id));
+                                    return [...prev, ...filtered].sort((a, b) => a.id - b.id);
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch missed messages:", err);
+                    }
                 }
             };
 

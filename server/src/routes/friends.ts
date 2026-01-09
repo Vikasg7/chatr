@@ -124,6 +124,7 @@ export default (prisma: PrismaClient, wsService: WSService) => {
         const userId = req.userId!;
         const limit = parseInt(req.query.limit as string) || 50;
         const beforeId = req.query.beforeId ? parseInt(req.query.beforeId as string) : undefined;
+        const sinceId = req.query.since ? parseInt(req.query.since as string) : undefined;
 
         const friendship = await prisma.friend.findUnique({
             where: { id: friendId }
@@ -137,9 +138,9 @@ export default (prisma: PrismaClient, wsService: WSService) => {
         const messages = await prisma.message.findMany({
             where: {
                 friendId,
-                id: beforeId ? { lt: beforeId } : undefined
+                id: sinceId ? { gt: sinceId } : beforeId ? { lt: beforeId } : undefined
             },
-            orderBy: { id: "desc" },
+            orderBy: { id: sinceId ? "asc" : "desc" },
             take: limit,
             include: {
                 sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
@@ -154,7 +155,8 @@ export default (prisma: PrismaClient, wsService: WSService) => {
             }
         });
 
-        res.json(messages.reverse());
+
+        res.json(sinceId ? messages : messages.reverse());
     });
 
     // DELETE FRIENDSHIP
