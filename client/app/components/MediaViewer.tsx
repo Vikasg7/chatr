@@ -66,10 +66,12 @@ export function MediaViewer({ mediaUrl, mediaType, onClose }: MediaViewerProps) 
 
                         {mediaType === "VIDEO" && (
                             <video
-                                src={mediaUrl}
+                                src={`${mediaUrl}#t=0.001`}
                                 controls
                                 autoPlay
-                                className="max-w-full max-h-[95vh] rounded-token-md shadow-2xl"
+                                playsInline
+                                preload="auto"
+                                className="max-w-full max-h-[95vh] rounded-token-md shadow-2xl bg-black"
                             />
                         )}
                     </motion.div>
