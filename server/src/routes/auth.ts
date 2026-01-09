@@ -38,7 +38,10 @@ export default function (prisma: PrismaClient) {
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("chatr_token", token, COOKIE_OPTIONS);
-      res.json({ user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } });
+      res.json({
+        user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+        token
+      });
     } catch (err) {
       logger.error(err);
       res.status(500).json({ error: "server error" });
@@ -64,7 +67,10 @@ export default function (prisma: PrismaClient) {
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("chatr_token", token, COOKIE_OPTIONS);
-      res.json({ user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } });
+      res.json({
+        user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
+        token
+      });
     } catch (err) {
       logger.error(err);
       res.status(500).json({ error: "server error" });

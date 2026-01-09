@@ -6,9 +6,14 @@ export const SERVER_URL = `${protocol}://${serverHost}`;
 export const API_BASE = `${SERVER_URL}/api`;
 
 async function request(method: string, path: string, body?: any) {
+  const { token } = useAuthStore.getState();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,

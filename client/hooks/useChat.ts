@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import * as api from "@/lib/api";
 import * as WS from "@/lib/ws";
 import toastLib from "@/lib/toast";
+import { useAuthStore } from "@/stores/auth";
 
 interface Message {
     id: number;
@@ -196,7 +197,8 @@ export function useChat(user: any) {
         const connect = () => {
             if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-            const ws = WS.create();
+            const token = useAuthStore.getState().token;
+            const ws = WS.create(token);
             wsRef.current = ws;
 
             ws.onopen = () => {
@@ -354,7 +356,7 @@ export function useChat(user: any) {
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
             wsRef.current?.close();
         };
-    }, [user?.id]); // Depends on user presence
+    }, [user?.id, useAuthStore.getState().token]); // Depends on user presence and token
 
     const sendSignal = useCallback((data: any) => {
         const ws = wsRef.current;

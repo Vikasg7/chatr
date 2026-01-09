@@ -23,8 +23,8 @@ export function useAuthForm() {
         try {
             const res = await api.post("/auth/login", { email: e, password: p });
             if (res && res.user) {
-                setUser(res.user);
-                // Note: Token is now handled via HttpOnly cookie
+                setUser(res.user, res.token);
+                // Note: Token is also handled via HttpOnly cookie for browsers that support it
                 toastLib.showToast("Signed in", "success");
                 router.replace("/");
             } else {
