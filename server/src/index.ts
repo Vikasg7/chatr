@@ -90,12 +90,8 @@ app.use("/api/auth/login", authLimiter);
 app.use(express.json());
 
 // Serve uploads (use project root with server/ prefix for monorepo)
-// Add headers to support video streaming with range requests
-app.use("/uploads", (req, res, next) => {
-  res.setHeader("Accept-Ranges", "bytes");
-  res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day cache
-  next();
-}, express.static(path.join(process.cwd(), "server/public/uploads")));
+// Serve uploads (consistent path across modules)
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 // simple health
 app.get("/health", (_req, res) => res.json({ ok: true }));

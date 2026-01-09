@@ -7,8 +7,7 @@ import { requireAuth, AuthRequest } from "../middleware/auth";
 const router = Router();
 
 // Ensure uploads dir exists
-// Use project root with server/ prefix for monorepo structure
-const uploadDir = path.join(process.cwd(), "server/public/uploads");
+const uploadDir = path.join(__dirname, "../../public/uploads");
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
