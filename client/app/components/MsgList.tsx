@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useState, memo, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, memo, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import * as format from "@/lib/format";
 import { MediaViewer } from "./MediaViewer";
 import { SERVER_URL } from "@/lib/api";
@@ -384,30 +383,74 @@ export function MessageList({
   hasMore = false,
   loadingMore = false
 }: MessageListProps) {
-  const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [activePickerId, setActivePickerId] = useState<number | null>(null);
   const [viewedMedia, setViewedMedia] = useState<{ url: string; type: "IMAGE" | "VIDEO" } | null>(null);
   const [deleteMsgId, setDeleteMsgId] = useState<number | null>(null);
   const [activeActionsId, setActiveActionsId] = useState<number | null>(null);
   const userId = currentUserId;
+  const initialScrollDone = useRef(false);
+  const prevMessagesCount = useRef(messages.length);
 
   const scrollToMessage = useCallback((msgId: number) => {
-    const index = messages.findIndex(m => m.id === msgId);
-    if (index !== -1) {
-      virtuosoRef.current?.scrollToIndex({
-        index,
-        align: 'center',
-        behavior: 'smooth'
-      });
-      setTimeout(() => {
-        const el = document.getElementById(`msg-${msgId}`);
-        if (el) {
-          el.classList.add('highlight-msg');
-          setTimeout(() => el.classList.remove('highlight-msg'), 2000);
-        }
-      }, 500);
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('highlight-msg');
+      setTimeout(() => el.classList.remove('highlight-msg'), 2000);
     }
-  }, [messages]);
+  }, []);
+
+  // Handle auto-scroll for new messages and initial load
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || messages.length === 0) return;
+
+    const lastMsg = messages[messages.length - 1];
+    const isMine = lastMsg.sender.id === userId;
+    const msgAdded = messages.length > prevMessagesCount.current;
+    const isInitial = !initialScrollDone.current;
+
+    // Check if user is already near the bottom (received msg auto-scroll)
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+
+    prevMessagesCount.current = messages.length;
+
+    if (isInitial || (msgAdded && (isMine || isNearBottom))) {
+      initialScrollDone.current = true;
+
+      // Use requestAnimationFrame for smoother "sticking" to bottom
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+
+      // Fallback for slower layout shifts
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+    }
+  }, [messages.length, userId]);
+
+  // Load more sentinel
+  useEffect(() => {
+    if (!hasMore || loadingMore || !onLoadMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, onLoadMore]);
 
   const enhancedMessages = useMemo(() => {
     return messages.map((m, i) => {
@@ -444,11 +487,10 @@ export function MessageList({
     );
   }, [loadingMore]);
 
-  const Footer = useCallback(() => <div className="h-8" />, []);
-
   return (
     <div
-      className="flex-1 bg-[var(--color-base)] relative min-w-0 overflow-hidden"
+      ref={containerRef}
+      className="flex-1 bg-[var(--color-base)] relative min-w-0 overflow-y-auto scroll-thin pb-4"
       onClick={() => {
         setActiveActionsId(null);
         setActivePickerId(null);
@@ -463,24 +505,21 @@ export function MessageList({
           )}
         </div>
       ) : (
-        <Virtuoso
-          ref={virtuosoRef}
-          data={enhancedMessages}
-          initialTopMostItemIndex={enhancedMessages.length - 1}
-          followOutput="smooth"
-          alignToBottom
-          computeItemKey={(index, item) => item.id}
-          increaseViewportBy={200}
-          className="flex-1 scroll-thin"
-          style={{ height: '100%', width: '100%', overflowX: 'hidden' }}
-          components={{ Header, Footer }}
-          startReached={() => {
-            if (hasMore && !loadingMore && onLoadMore) {
-              onLoadMore();
-            }
-          }}
-          itemContent={(index, m) => (
-            <div className="px-2 md:px-4 w-full">
+        <div className="flex flex-col min-h-full">
+          {/* Scroll Sentinel for Loading More */}
+          <div ref={sentinelRef} className="h-4 w-full" />
+
+          {loadingMore && (
+            <div className="flex items-center justify-center gap-2 py-4">
+              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Loading more history...</span>
+            </div>
+          )}
+
+          <div className="flex-1" />
+
+          {enhancedMessages.map((m) => (
+            <div key={m.id} className="px-2 md:px-4 w-full">
               <MessageItem
                 m={m}
                 mine={m.mine}
@@ -501,8 +540,8 @@ export function MessageList({
                 scrollToMessage={scrollToMessage}
               />
             </div>
-          )}
-        />
+          ))}
+        </div>
       )}
 
       {/* Media Viewer */}

@@ -532,6 +532,7 @@ export default function ChatPage() {
             />
 
             <MessageList
+              key={chat.currentFriendId || chat.selectedUserId || 'none'}
               messages={chat.messages}
               currentUserId={user?.id || null}
               onReact={chat.sendReaction}
