@@ -34,12 +34,16 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
                 formData.append("avatar", fileInputRef.current.files[0]);
             }
 
+            const { token } = useAuthStore.getState();
+            const headers: Record<string, string> = {};
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+
             // Use fetch directly for FormData as our api wrapper might strict JSON
-            // But let's see if api wrapper handles FormData? 
-            // api.ts likely sends Content-Type: application/json. 
-            // We need multipart/form-data.
             const res = await fetch(`${API_BASE}/auth/profile`, {
                 method: "PUT",
+                headers,
                 body: formData,
                 credentials: "include"
             });

@@ -65,8 +65,15 @@ export async function uploadFile(file: File) {
   const formData = new FormData();
   formData.append("file", file);
 
+  const { token } = useAuthStore.getState();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE}/upload`, {
     method: "POST",
+    headers,
     body: formData,
     credentials: "include", // ✅ Send cookies with uploads
   });

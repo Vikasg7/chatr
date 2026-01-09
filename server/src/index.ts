@@ -91,7 +91,11 @@ app.use(express.json());
 
 // Serve uploads (use project root with server/ prefix for monorepo)
 // Serve uploads (consistent path across modules)
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day
+  next();
+}, express.static(path.join(__dirname, "../public/uploads")));
 
 // simple health
 app.get("/health", (_req, res) => res.json({ ok: true }));
