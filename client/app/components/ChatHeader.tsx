@@ -48,7 +48,7 @@ export function ChatHeader({
     <div className="flex items-center justify-between pl-4 pr-3 md:pl-4 md:pr-4 py-token-2 border-b border-[var(--border-subtle)] bg-[var(--color-elevated)] transition-colors relative">
 
       <div className="flex flex-col min-w-0">
-        <div className="flex items-center gap-token-3">
+        <div className="flex items-center gap-2">
           <div className="text-h6 font-bold tracking-tight text-[var(--text-primary)] truncate leading-none">{roomName}</div>
           <div className="flex items-center gap-token-2">
             <div
