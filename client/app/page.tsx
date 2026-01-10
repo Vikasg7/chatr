@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
 import GlobalHeader from "./components/GlobalHeader";
@@ -21,7 +21,48 @@ import { useWebRTC } from "@/hooks/useWebRTC";
 import { CallOverlay } from "./components/CallOverlay";
 import { VideoCallOverlay } from "./components/VideoCallOverlay";
 
-export default function ChatPage() {
+function LoadingScreen() {
+  return (
+    <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[var(--color-base)] relative overflow-hidden">
+      {/* Background Gradients */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 blur-[120px] rounded-full" />
+
+      <div className="relative flex flex-col items-center gap-8">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="h-20 w-20 rounded-[24px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20 ring-4 ring-white/10"
+        >
+          <MessageSquare size={40} fill="white" className="animate-pulse" />
+        </motion.div>
+
+        <div className="flex flex-col items-center">
+          <h1 className="text-3xl font-black text-[var(--text-primary)] tracking-tight mb-2">Chatr</h1>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+            <span className="text-[10px] uppercase font-black tracking-[0.2em] text-indigo-400">Securely Connecting</span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="w-48 h-1 bg-[var(--border-subtle)] rounded-full overflow-hidden relative">
+            <motion.div
+              className="absolute inset-y-0 left-0 bg-indigo-500"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+          <span className="text-xs font-medium text-[var(--text-muted)] animate-pulse">Initializing encrypted session...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatContent() {
   const { user, hydrated, setUser } = useAuthStore();
   const [ready, setReady] = useState(false);
   const searchParams = useSearchParams();
@@ -314,44 +355,7 @@ export default function ChatPage() {
 
   // Loading Screen (Wait for hydration and /me check)
   if (!hydrated || !ready) {
-    return (
-      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[var(--color-base)] relative overflow-hidden">
-        {/* Background Gradients */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 blur-[120px] rounded-full" />
-
-        <div className="relative flex flex-col items-center gap-8">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="h-20 w-20 rounded-[24px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20 ring-4 ring-white/10"
-          >
-            <MessageSquare size={40} fill="white" className="animate-pulse" />
-          </motion.div>
-
-          <div className="flex flex-col items-center">
-            <h1 className="text-3xl font-black text-[var(--text-primary)] tracking-tight mb-2">Chatr</h1>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
-              <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
-              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-indigo-400">Securely Connecting</span>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <div className="w-48 h-1 bg-[var(--border-subtle)] rounded-full overflow-hidden relative">
-              <motion.div
-                className="absolute inset-y-0 left-0 bg-indigo-500"
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              />
-            </div>
-            <span className="text-xs font-medium text-[var(--text-muted)] animate-pulse">Initializing encrypted session...</span>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // Auth Screen
@@ -678,5 +682,13 @@ export default function ChatPage() {
         />
       )}
     </>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <ChatContent />
+    </Suspense>
   );
 }
