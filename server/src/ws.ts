@@ -409,7 +409,7 @@ export class WSService {
               data: {
                 text: summaryText,
                 senderId: client.userId!,
-                friendId: client.friendId,
+                friendId: friendId,
                 attachmentType: "CALL_SUMMARY",
                 metadata: { type: msg.type, duration: msg.duration } as any
               },
@@ -417,7 +417,7 @@ export class WSService {
                 sender: { select: { id: true, email: true, name: true, avatarUrl: true } },
               },
             }).then(message => {
-              this.broadcastToChat(client.friendId!, { type: "message:new", message });
+              this.broadcastToChat(friendId, { type: "message:new", message });
             });
           }
         }

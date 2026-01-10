@@ -138,6 +138,7 @@ export default function ChatPage() {
     chat.setCallType('audio');
     chat.setCallStatus('RINGING_OUT');
     chat.setActiveCallUserId(Number(currentFriendUser.id));
+    if (currentFriendship) chat.setActiveCallFriendId(currentFriendship.id);
     webRTC.startCall(Number(currentFriendUser.id));
     // Send call type to peer
     chat.sendSignal({
@@ -155,6 +156,7 @@ export default function ChatPage() {
     chat.setCallType('video');
     chat.setCallStatus('RINGING_OUT');
     chat.setActiveCallUserId(Number(currentFriendUser.id));
+    if (currentFriendship) chat.setActiveCallFriendId(currentFriendship.id);
     webRTC.startCall(Number(currentFriendUser.id), true);
     // Send call type to peer
     chat.sendSignal({
@@ -169,6 +171,8 @@ export default function ChatPage() {
       duration
     });
     chat.setCallStatus('IDLE');
+    chat.setActiveCallUserId(null);
+    chat.setActiveCallFriendId(null);
     chat.setRemoteStream(null);
     webRTC.cleanup();
   };
@@ -176,16 +180,24 @@ export default function ChatPage() {
   const handleRejectCall = () => {
     chat.sendSignal({ type: "call:reject" });
     chat.setCallStatus('IDLE');
+    chat.setActiveCallUserId(null);
+    chat.setActiveCallFriendId(null);
     webRTC.cleanup();
   };
 
   const handleCancelCall = () => {
     chat.sendSignal({ type: "call:cancel" });
     chat.setCallStatus('IDLE');
+    chat.setActiveCallUserId(null);
+    chat.setActiveCallFriendId(null);
     webRTC.cleanup();
   };
 
   const handleAnswerCall = async () => {
+    // Automatically switch to the caller's chat first
+    if (chat.activeCallFriendId) {
+      chat.selectFriend(chat.activeCallFriendId);
+    }
     // Call the answerCall function which gets media and sends answer
     await webRTC.answerCall(chat.callType === 'video');
     chat.setCallStatus('ACTIVE');

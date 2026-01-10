@@ -31,6 +31,7 @@ export function useChat(user: any) {
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [callType, setCallType] = useState<'audio' | 'video'>('audio');
     const [activeCallUserId, setActiveCallUserId] = useState<number | null>(null);
+    const [activeCallFriendId, setActiveCallFriendId] = useState<number | null>(null);
     const [hasMoreMessages, setHasMoreMessages] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [hasMoreFriends, setHasMoreFriends] = useState(true);
@@ -49,13 +50,14 @@ export function useChat(user: any) {
         callStatus,
         currentFriendId,
         user,
-        friends
+        friends,
+        activeCallFriendId
     });
 
     useEffect(() => {
-        stateRefs.current = { callStatus, currentFriendId, user, friends };
+        stateRefs.current = { callStatus, currentFriendId, user, friends, activeCallFriendId };
         currentFriendIdRef.current = currentFriendId;
-    }, [callStatus, currentFriendId, user, friends]);
+    }, [callStatus, currentFriendId, user, friends, activeCallFriendId]);
 
     useEffect(() => {
         messagesRef.current = messages;
@@ -69,6 +71,7 @@ export function useChat(user: any) {
         setSelectedUserId(null);
         setUnreadCounts({});
         setUnreadMarkerId(null);
+        setActiveCallFriendId(null);
         setOnlineUsers(new Set());
         setTypingUsers(new Set());
         currentFriendIdRef.current = null;
@@ -266,7 +269,7 @@ export function useChat(user: any) {
 
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                const { callStatus: currentStatus, currentFriendId: cid, user: currentUser, friends: currentFriends } = stateRefs.current;
+                const { callStatus: currentStatus, currentFriendId: cid, user: currentUser, friends: currentFriends, activeCallFriendId: currentActiveCallFid } = stateRefs.current;
 
                 if (data.type === "message:new") {
                     addMsg(data.message);
@@ -353,13 +356,14 @@ export function useChat(user: any) {
                     const friend = currentFriends.find(f => f.id === data.friendId);
                     const callerId = friend ? (friend.senderId === currentUser?.id ? friend.receiverId : friend.senderId) : null;
                     setActiveCallUserId(callerId);
-                    setCurrentFriendId(data.friendId); // Link to this chat for signaling
+                    setActiveCallFriendId(data.friendId);
                     setCallStatus('RINGING_IN');
                     if (signalHandlerRef.current) signalHandlerRef.current(data);
                 }
                 else if (data.type === "call:cancel" || data.type === "call:reject" || data.type === "call:end") {
                     setCallStatus('IDLE');
                     setActiveCallUserId(null);
+                    setActiveCallFriendId(null);
                     setRemoteStream(null);
                     if (signalHandlerRef.current) signalHandlerRef.current(data);
                 }
@@ -373,6 +377,7 @@ export function useChat(user: any) {
                 else if (data.type === "call:error") {
                     setCallStatus('IDLE');
                     setActiveCallUserId(null);
+                    setActiveCallFriendId(null);
                     if (signalHandlerRef.current) signalHandlerRef.current(data);
                 }
             };
@@ -429,8 +434,18 @@ export function useChat(user: any) {
     const sendSignal = useCallback((data: any) => {
         const ws = wsRef.current;
         if (ws && ws.readyState === WebSocket.OPEN) {
-            // Priority: data.friendId > currentFriendId
-            const fid = data.friendId || currentFriendId;
+            const { activeCallFriendId: activeFid, currentFriendId: currentFid } = stateRefs.current;
+
+            // 🔥 CRITICAL: Call signals MUST go to the active call's friend ID if available
+            let fid = data.friendId;
+            if (!fid) {
+                if (data.type && data.type.startsWith('call:')) {
+                    fid = activeFid || currentFid;
+                } else {
+                    fid = currentFid;
+                }
+            }
+
             ws.send(JSON.stringify({ ...data, friendId: fid }));
         } else {
             console.warn("Could not send signal: WebSocket is not open", data.type);
@@ -438,7 +453,7 @@ export function useChat(user: any) {
                 toastLib.showToast("Connection lost. Reconnecting...", "error");
             }
         }
-    }, [currentFriendId]);
+    }, []);
 
     const selectUser = useCallback(async (userId: number) => {
         const existing = friends.find(f => f.senderId === userId || f.receiverId === userId);
@@ -601,6 +616,8 @@ export function useChat(user: any) {
         setCallType,
         activeCallUserId,
         setActiveCallUserId,
+        activeCallFriendId,
+        setActiveCallFriendId,
         hasMoreMessages,
         loadingMessages,
         loadMoreMessages,
