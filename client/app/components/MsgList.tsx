@@ -24,7 +24,6 @@ interface MessageListProps {
 const MessageItem = memo(({
   m,
   mine,
-  isFirstInGroup,
   isLastInGroup,
   hasReactions,
   isLastMessage,
@@ -38,7 +37,8 @@ const MessageItem = memo(({
   onReact,
   onEdit,
   onQuote,
-  scrollToMessage
+  scrollToMessage,
+  showTime = true
 }: any) => {
   const marginClass = isLastMessage ? 'mb-0' : (isLastInGroup || hasReactions ? 'mb-6' : 'mb-1');
 
@@ -48,13 +48,15 @@ const MessageItem = memo(({
       className={`group flex items-start gap-token-1 w-full px-0 ${mine ? 'flex-row-reverse' : 'flex-row'} ${marginClass}`}
       style={{ paddingTop: 'calc(var(--space-1) * 0.75)', paddingBottom: 'calc(var(--space-1) * 0.75)' }}
     >
-      {/* Time Marker - Only show for first in group */}
-      <div className={`w-8 shrink-0 text-[10px] text-[var(--text-muted)] font-medium ${mine ? 'text-left' : 'text-right'}`} style={{ paddingTop: 'var(--space-1)' }}>
-        {isFirstInGroup && format.time(m.createdAt)}
-      </div>
+      {/* Time Marker - Only show if enabled and first in group */}
+      {showTime && (
+        <div className={`w-8 shrink-0 text-[10px] text-[var(--text-muted)] font-medium ${mine ? 'text-left' : 'text-right'}`} style={{ paddingTop: 'var(--space-1)' }}>
+          {m.isFirstInGroup && format.time(m.createdAt)}
+        </div>
+      )}
 
       {/* Message Content Container */}
-      <div className={`flex flex-col relative ${mine ? 'items-end' : 'items-start'} max-w-[calc(100%-140px)] sm:max-w-[75%] lg:max-w-[65%]`}>
+      <div className={`flex flex-col relative ${mine ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%] lg:max-w-[65%]`}>
         {/* Emoji Picker - Moved here for edge safety */}
         <AnimatePresence>
           {activePickerId === m.id && (
@@ -461,8 +463,10 @@ export function MessageList({
       const nextTime = next ? new Date(next.createdAt).getTime() : 0;
 
       const withinWindow = (a: number, b: number) => Math.abs(a - b) < 1 * 60 * 1000;
-      const isFirstInGroup = !prev || !prev.sender || !m.sender || prev.sender.id !== m.sender.id || !withinWindow(time, prevTime);
-      const isLastInGroup = !next || !next.sender || !m.sender || next.sender.id !== m.sender.id || !withinWindow(time, nextTime);
+
+      // Grouping logic: same sender within 1 minute, but split if unread marker is present
+      const isFirstInGroup = !prev || !prev.sender || !m.sender || prev.sender.id !== m.sender.id || !withinWindow(time, prevTime) || unreadMarkerId === m.id;
+      const isLastInGroup = !next || !next.sender || !m.sender || next.sender.id !== m.sender.id || !withinWindow(time, nextTime) || unreadMarkerId === next?.id;
 
       return {
         ...m,
@@ -473,7 +477,25 @@ export function MessageList({
         hasReactions: m.reactions && m.reactions.length > 0
       };
     });
-  }, [messages, userId]);
+  }, [messages, userId, unreadMarkerId]);
+
+  const messageGroups = useMemo(() => {
+    const groups: any[] = [];
+    enhancedMessages.forEach(m => {
+      if (m.isFirstInGroup || groups.length === 0) {
+        groups.push({
+          id: `group-${m.id}`,
+          mine: m.mine,
+          sender: m.sender,
+          createdAt: m.createdAt,
+          messages: [m]
+        });
+      } else {
+        groups[groups.length - 1].messages.push(m);
+      }
+    });
+    return groups;
+  }, [enhancedMessages]);
 
   const Header = useCallback(() => {
     if (!loadingMore) return <div className="h-4" />;
@@ -488,7 +510,7 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
-      className="flex-1 bg-[var(--color-base)] relative min-w-0 overflow-y-auto scroll-thin pb-4"
+      className="flex-1 bg-[var(--color-base)] relative min-w-0 overflow-y-auto overflow-x-hidden scroll-thin pb-4"
       onClick={() => {
         setActiveActionsId(null);
         setActivePickerId(null);
@@ -516,44 +538,58 @@ export function MessageList({
 
           <div className="flex-1" />
 
-          {enhancedMessages.map((m, idx) => (
-            <div key={m.id} className="px-2 md:px-4 w-full">
-              <AnimatePresence>
-                {unreadMarkerId === m.id && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center gap-4 my-6 overflow-hidden"
-                  >
-                    <div className="flex-1 h-[1px] bg-red-500/30" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-                      New Messages
-                    </span>
-                    <div className="flex-1 h-[1px] bg-red-500/30" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <MessageItem
-                m={m}
-                mine={m.mine}
-                isFirstInGroup={m.isFirstInGroup}
-                isLastInGroup={m.isLastInGroup}
-                hasReactions={m.hasReactions}
-                isLastMessage={m.isLastMessage}
-                userId={userId}
-                activeActionsId={activeActionsId}
-                setActiveActionsId={setActiveActionsId}
-                activePickerId={activePickerId}
-                setActivePickerId={setActivePickerId}
-                setDeleteMsgId={setDeleteMsgId}
-                setViewedMedia={setViewedMedia}
-                onReact={onReact}
-                onEdit={onEdit}
-                onQuote={onQuote}
-                scrollToMessage={scrollToMessage}
-              />
+          {messageGroups.map((group) => (
+            <div key={group.id} className={`w-full flex gap-token-1 px-2 md:px-4 relative ${group.mine ? 'flex-row-reverse' : 'flex-row'}`}>
+              {/* Sticky Timestamp Column - preserving original w-8 size and simple text style */}
+              <div className="w-8 shrink-0 relative">
+                <div className={`sticky top-2 z-10 text-[10px] text-[var(--text-muted)] font-medium ${group.mine ? 'text-left' : 'text-right'}`} style={{ paddingTop: 'calc(var(--space-1) * 1.75)' }}>
+                  {format.time(group.createdAt)}
+                </div>
+              </div>
+
+              {/* Message Items Pillar */}
+              <div className="flex-1 min-w-0">
+                {group.messages.map((m: any) => (
+                  <div key={m.id} className="w-full">
+                    <AnimatePresence>
+                      {unreadMarkerId === m.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="flex items-center gap-4 my-6 overflow-hidden"
+                        >
+                          <div className="flex-1 h-[1px] bg-red-500/30" />
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+                            New Messages
+                          </span>
+                          <div className="flex-1 h-[1px] bg-red-500/30" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <MessageItem
+                      m={m}
+                      mine={m.mine}
+                      isLastInGroup={m.isLastInGroup}
+                      hasReactions={m.hasReactions}
+                      isLastMessage={m.isLastMessage}
+                      userId={userId}
+                      activeActionsId={activeActionsId}
+                      setActiveActionsId={setActiveActionsId}
+                      activePickerId={activePickerId}
+                      setActivePickerId={setActivePickerId}
+                      setDeleteMsgId={setDeleteMsgId}
+                      setViewedMedia={setViewedMedia}
+                      onReact={onReact}
+                      onEdit={onEdit}
+                      onQuote={onQuote}
+                      scrollToMessage={scrollToMessage}
+                      showTime={false} // Internal time hidden; handled by sticky parent
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
           <div ref={bottomRef} className="h-4 w-full" />
