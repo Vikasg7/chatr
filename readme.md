@@ -53,5 +53,5 @@ Chatr is a real-time chat application built with Next.js, React, and WebSockets.
 - [x] hide logout and theme button in the profile menu on the top right corner
 - [x] three accepted the friend request notifications
 - [x] when clicking on the + icon friend in the SearchFriendModal, it should send the friend request straight away
-- [ ] the msg timestamp should be visible on screen, while scrollin down the chat if the group is too long..
+- [x] the msg timestamp should be visible on screen, while scrollin down the chat if the group is too long..
 - [ ] code refactoring

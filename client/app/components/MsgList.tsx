@@ -398,6 +398,7 @@ export function MessageList({
   const [viewedMedia, setViewedMedia] = useState<{ url: string; type: "IMAGE" | "VIDEO" } | null>(null);
   const [deleteMsgId, setDeleteMsgId] = useState<number | null>(null);
   const [activeActionsId, setActiveActionsId] = useState<number | null>(null);
+  const [showJumpButton, setShowJumpButton] = useState(false);
   const userId = currentUserId;
   const initialScrollDone = useRef(false);
   const prevMessagesCount = useRef(messages.length);
@@ -410,6 +411,16 @@ export function MessageList({
       setTimeout(() => el.classList.remove('highlight-msg'), 2000);
     }
   }, []);
+
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+    if (isAtBottom && showJumpButton) {
+      setShowJumpButton(false);
+    }
+  }, [showJumpButton]);
 
   // Handle auto-scroll for new messages and initial load
   useEffect(() => {
@@ -429,6 +440,9 @@ export function MessageList({
     if (isInitial || (msgAdded && (isMine || isNearBottom))) {
       initialScrollDone.current = true;
       bottomRef.current?.scrollIntoView({ behavior: isInitial ? 'auto' : 'smooth' });
+      setShowJumpButton(false);
+    } else if (msgAdded && !isMine && !isNearBottom) {
+      setShowJumpButton(true);
     }
   }, [messages.length, userId]);
 
@@ -458,15 +472,18 @@ export function MessageList({
       const prev = messages[i - 1];
       const next = messages[i + 1];
 
-      const time = m.createdAt ? new Date(m.createdAt).getTime() : 0;
-      const prevTime = prev ? new Date(prev.createdAt).getTime() : 0;
-      const nextTime = next ? new Date(next.createdAt).getTime() : 0;
+      const time = m.createdAt ? new Date(m.createdAt).getTime() : Date.now();
+      const prevTime = prev?.createdAt ? new Date(prev.createdAt).getTime() : 0;
+      const nextTime = next?.createdAt ? new Date(next.createdAt).getTime() : 0;
 
-      const withinWindow = (a: number, b: number) => Math.abs(a - b) < 1 * 60 * 1000;
+      // Grouping logic: same sender within the SAME CLOCK MINUTE
+      const sameMinute = (a: number, b: number) => {
+        if (a === 0 || b === 0) return false;
+        return Math.floor(a / 60000) === Math.floor(b / 60000);
+      };
 
-      // Grouping logic: same sender within 1 minute, but split if unread marker is present
-      const isFirstInGroup = !prev || !prev.sender || !m.sender || prev.sender.id !== m.sender.id || !withinWindow(time, prevTime) || unreadMarkerId === m.id;
-      const isLastInGroup = !next || !next.sender || !m.sender || next.sender.id !== m.sender.id || !withinWindow(time, nextTime) || unreadMarkerId === next?.id;
+      const isFirstInGroup = !prev || !prev.sender || !m.sender || prev.sender.id !== m.sender.id || !sameMinute(time, prevTime) || unreadMarkerId === m.id;
+      const isLastInGroup = !next || !next.sender || !m.sender || next.sender.id !== m.sender.id || !sameMinute(time, nextTime) || unreadMarkerId === next?.id;
 
       return {
         ...m,
@@ -508,93 +525,119 @@ export function MessageList({
   }, [loadingMore]);
 
   return (
-    <div
-      ref={containerRef}
-      className="flex-1 bg-[var(--color-base)] relative min-w-0 overflow-y-auto overflow-x-hidden scroll-thin pb-4"
-      onClick={() => {
-        setActiveActionsId(null);
-        setActivePickerId(null);
-      }}
-    >
-      {!messages || messages.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-sm text-[var(--text-muted)]">
-          {loadingMore ? (
-            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            "No messages yet. Be the first to say hi 👋"
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col min-h-full">
-          {/* Scroll Sentinel for Loading More */}
-          <div ref={sentinelRef} className="h-4 w-full" />
+    <div className="flex-1 relative overflow-hidden flex flex-col min-w-0">
+      <div
+        ref={containerRef}
+        className="flex-1 bg-[var(--color-base)] relative min-w-0 overflow-y-auto overflow-x-hidden scroll-thin pb-4"
+        onScroll={handleScroll}
+        onClick={() => {
+          setActiveActionsId(null);
+          setActivePickerId(null);
+        }}
+      >
+        {!messages || messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-sm text-[var(--text-muted)]">
+            {loadingMore ? (
+              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              "No messages yet. Be the first to say hi 👋"
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col min-h-full">
+            {/* Scroll Sentinel for Loading More */}
+            <div ref={sentinelRef} className="h-4 w-full" />
 
-          {loadingMore && (
-            <div className="flex items-center justify-center gap-2 py-4">
-              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-              <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Loading more history...</span>
-            </div>
-          )}
+            {loadingMore && (
+              <div className="flex items-center justify-center gap-2 py-4">
+                <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Loading more history...</span>
+              </div>
+            )}
 
-          <div className="flex-1" />
+            <div className="flex-1" />
 
-          {messageGroups.map((group) => (
-            <div key={group.id} className={`w-full flex gap-token-1 px-2 md:px-4 relative ${group.mine ? 'flex-row-reverse' : 'flex-row'}`}>
-              {/* Sticky Timestamp Column - preserving original w-8 size and simple text style */}
-              <div className="w-8 shrink-0 relative">
-                <div className={`sticky top-2 z-10 text-[10px] text-[var(--text-muted)] font-medium ${group.mine ? 'text-left' : 'text-right'}`} style={{ paddingTop: 'calc(var(--space-1) * 1.75)' }}>
-                  {format.time(group.createdAt)}
+            {messageGroups.map((group) => (
+              <div key={group.id} className="w-full">
+                <AnimatePresence>
+                  {unreadMarkerId === group.messages[0].id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex items-center gap-4 py-8 overflow-hidden w-full px-6"
+                    >
+                      <div className="flex-1 h-[1px] bg-red-500/30" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                        New Messages
+                      </span>
+                      <div className="flex-1 h-[1px] bg-red-500/30" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className={`w-full flex gap-token-1 px-2 md:px-4 relative ${group.mine ? 'flex-row-reverse' : 'flex-row'} ${unreadMarkerId === group.messages[0].id ? 'mt-2' : ''}`}>
+                  {/* Sticky Timestamp Column - preserving original w-8 size and simple text style */}
+                  <div className="w-8 shrink-0 relative">
+                    <div className={`sticky top-2 z-10 text-[10px] text-[var(--text-muted)] font-medium ${group.mine ? 'text-left' : 'text-right'}`} style={{ paddingTop: 'calc(var(--space-1) * 1.75)' }}>
+                      {format.time(group.createdAt)}
+                    </div>
+                  </div>
+
+                  {/* Message Items Pillar */}
+                  <div className="flex-1 min-w-0">
+                    {group.messages.map((m: any) => (
+                      <div key={m.id} className="w-full">
+                        <MessageItem
+                          m={m}
+                          mine={m.mine}
+                          isLastInGroup={m.isLastInGroup}
+                          hasReactions={m.hasReactions}
+                          isLastMessage={m.isLastMessage}
+                          userId={userId}
+                          activeActionsId={activeActionsId}
+                          setActiveActionsId={setActiveActionsId}
+                          activePickerId={activePickerId}
+                          setActivePickerId={setActivePickerId}
+                          setDeleteMsgId={setDeleteMsgId}
+                          setViewedMedia={setViewedMedia}
+                          onReact={onReact}
+                          onEdit={onEdit}
+                          onQuote={onQuote}
+                          scrollToMessage={scrollToMessage}
+                          showTime={false} // Internal time hidden; handled by sticky parent
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
+            ))}
+            <div ref={bottomRef} className="h-4 w-full" />
+          </div>
+        )}
+      </div>
 
-              {/* Message Items Pillar */}
-              <div className="flex-1 min-w-0">
-                {group.messages.map((m: any) => (
-                  <div key={m.id} className="w-full">
-                    <AnimatePresence>
-                      {unreadMarkerId === m.id && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="flex items-center gap-4 my-6 overflow-hidden"
-                        >
-                          <div className="flex-1 h-[1px] bg-red-500/30" />
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-                            New Messages
-                          </span>
-                          <div className="flex-1 h-[1px] bg-red-500/30" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <MessageItem
-                      m={m}
-                      mine={m.mine}
-                      isLastInGroup={m.isLastInGroup}
-                      hasReactions={m.hasReactions}
-                      isLastMessage={m.isLastMessage}
-                      userId={userId}
-                      activeActionsId={activeActionsId}
-                      setActiveActionsId={setActiveActionsId}
-                      activePickerId={activePickerId}
-                      setActivePickerId={setActivePickerId}
-                      setDeleteMsgId={setDeleteMsgId}
-                      setViewedMedia={setViewedMedia}
-                      onReact={onReact}
-                      onEdit={onEdit}
-                      onQuote={onQuote}
-                      scrollToMessage={scrollToMessage}
-                      showTime={false} // Internal time hidden; handled by sticky parent
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          <div ref={bottomRef} className="h-4 w-full" />
-        </div>
-      )}
+      {/* Jump to New Messages Button - Outside scroll area */}
+      <AnimatePresence>
+        {showJumpButton && (
+          <motion.button
+            initial={{ opacity: 0, y: 20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 20, x: '-50%' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+              setShowJumpButton(false);
+            }}
+            className="absolute bottom-6 left-1/2 z-[100] bg-indigo-600 text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-black tracking-widest hover:bg-indigo-500 hover:scale-105 active:scale-95 transition-all border border-white/20 whitespace-nowrap"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5" /></svg>
+            NEW MESSAGES
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Media Viewer */}
       <MediaViewer
