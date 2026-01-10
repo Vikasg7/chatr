@@ -18,6 +18,7 @@ interface MessageListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  unreadMarkerId?: number | null;
 }
 
 const MessageItem = memo(({
@@ -385,10 +386,12 @@ export function MessageList({
   onAcceptInvite,
   onLoadMore,
   hasMore = false,
-  loadingMore = false
+  loadingMore = false,
+  unreadMarkerId = null
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const [activePickerId, setActivePickerId] = useState<number | null>(null);
   const [viewedMedia, setViewedMedia] = useState<{ url: string; type: "IMAGE" | "VIDEO" } | null>(null);
   const [deleteMsgId, setDeleteMsgId] = useState<number | null>(null);
@@ -423,16 +426,7 @@ export function MessageList({
 
     if (isInitial || (msgAdded && (isMine || isNearBottom))) {
       initialScrollDone.current = true;
-
-      // Use requestAnimationFrame for smoother "sticking" to bottom
-      requestAnimationFrame(() => {
-        container.scrollTop = container.scrollHeight;
-      });
-
-      // Fallback for slower layout shifts
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-      }, 100);
+      bottomRef.current?.scrollIntoView({ behavior: isInitial ? 'auto' : 'smooth' });
     }
   }, [messages.length, userId]);
 
@@ -522,8 +516,25 @@ export function MessageList({
 
           <div className="flex-1" />
 
-          {enhancedMessages.map((m) => (
+          {enhancedMessages.map((m, idx) => (
             <div key={m.id} className="px-2 md:px-4 w-full">
+              <AnimatePresence>
+                {unreadMarkerId === m.id && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-4 my-6 overflow-hidden"
+                  >
+                    <div className="flex-1 h-[1px] bg-red-500/30" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+                      New Messages
+                    </span>
+                    <div className="flex-1 h-[1px] bg-red-500/30" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <MessageItem
                 m={m}
                 mine={m.mine}
@@ -545,6 +556,7 @@ export function MessageList({
               />
             </div>
           ))}
+          <div ref={bottomRef} className="h-4 w-full" />
         </div>
       )}
 

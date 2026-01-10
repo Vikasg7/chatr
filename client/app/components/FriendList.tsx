@@ -13,6 +13,7 @@ interface FriendListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  unreadCounts?: Record<number, number>;
 }
 
 export function FriendList({
@@ -24,6 +25,7 @@ export function FriendList({
   onLoadMore,
   hasMore = false,
   loadingMore = false,
+  unreadCounts = {},
 }: FriendListProps) {
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +104,16 @@ export function FriendList({
                 {friendUser.email}
               </div>
             </div>
+
+            {unreadCounts[f.id] > 0 && !active && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="ml-auto min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-indigo-500 text-white text-[10px] font-black shadow-lg shadow-indigo-500/20"
+              >
+                {unreadCounts[f.id]}
+              </motion.div>
+            )}
 
             {active && (
               <motion.div

@@ -483,6 +483,7 @@ export default function ChatPage() {
                   onLoadMore={chat.loadMoreFriends}
                   hasMore={chat.hasMoreFriends}
                   loadingMore={chat.loadingFriends}
+                  unreadCounts={chat.unreadCounts}
                 />
               </div>
 
@@ -559,6 +560,7 @@ export default function ChatPage() {
               onLoadMore={chat.loadMoreMessages}
               hasMore={chat.hasMoreMessages}
               loadingMore={chat.loadingMessages}
+              unreadMarkerId={chat.unreadMarkerId}
             />
 
             {currentFriendship && (

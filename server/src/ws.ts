@@ -230,7 +230,7 @@ export class WSService {
           message,
         });
 
-        // ✅ Push Notifications for offline/background users
+        // ✅ Send to recipient's other connections (not currently in this specific chat)
         const friend = await this.prisma.friend.findUnique({
           where: { id: client.friendId },
           select: { senderId: true, receiverId: true }
@@ -238,6 +238,30 @@ export class WSService {
 
         if (friend) {
           const targetUserId = friend.senderId === client.userId ? friend.receiverId : friend.senderId;
+          const recipientClients = this.userToClients.get(targetUserId);
+          const clientsInChat = this.friendToClients.get(client.friendId);
+
+          if (recipientClients) {
+            for (const rid of recipientClients) {
+              // Only send if the recipient connection is NOT already in this chat (to avoid double delivery)
+              if (!clientsInChat || !clientsInChat.has(rid)) {
+                const rClient = this.clients.get(rid);
+                if (rClient && rClient.socket.readyState === WebSocket.OPEN) {
+                  rClient.socket.send(JSON.stringify({ type: "message:new", message }));
+                }
+              }
+            }
+          }
+        }
+
+        // ✅ Push Notifications for offline/background users
+        const pushTargetFriend = await this.prisma.friend.findUnique({
+          where: { id: client.friendId },
+          select: { senderId: true, receiverId: true }
+        });
+
+        if (pushTargetFriend) {
+          const targetUserId = pushTargetFriend.senderId === client.userId ? pushTargetFriend.receiverId : pushTargetFriend.senderId;
           const isOnline = this.userToClients.has(targetUserId);
 
           if (!isOnline) {

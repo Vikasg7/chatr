@@ -16,6 +16,7 @@ interface Message {
     metadata?: any;
     replyToId?: number;
     replyTo?: Message;
+    friendId: number;
 }
 
 export function useChat(user: any) {
@@ -34,6 +35,8 @@ export function useChat(user: any) {
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [hasMoreFriends, setHasMoreFriends] = useState(true);
     const [loadingFriends, setLoadingFriends] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
+    const [unreadMarkerId, setUnreadMarkerId] = useState<number | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -58,11 +61,28 @@ export function useChat(user: any) {
         messagesRef.current = messages;
     }, [messages]);
 
+    // Reset state on user change (logout/login)
+    useEffect(() => {
+        setMessages([]);
+        setFriends([]);
+        setCurrentFriendId(null);
+        setSelectedUserId(null);
+        setUnreadCounts({});
+        setUnreadMarkerId(null);
+        setOnlineUsers(new Set());
+        setTypingUsers(new Set());
+        currentFriendIdRef.current = null;
+        messagesRef.current = [];
+    }, [user?.id]);
+
     const setSignalHandler = useCallback((handler: (data: any) => void) => {
         signalHandlerRef.current = handler;
     }, []);
 
     const addMsg = useCallback((msg: Message) => {
+        // ONLY add to state if it belongs to the current conversation
+        if (msg.friendId !== currentFriendIdRef.current) return;
+
         setMessages(prev => {
             if (prev.some(m => m.id === msg.id)) return prev;
             const next = [...prev, msg].sort((a, b) => a.id - b.id);
@@ -82,6 +102,13 @@ export function useChat(user: any) {
             setSelectedUserId(otherUser?.id || null);
         }
         setCurrentFriendId(friendshipId);
+
+        // Capture unread count before resetting
+        const count = unreadCounts[friendshipId] || 0;
+
+        // Reset unread count for this friendship
+        setUnreadCounts(prev => ({ ...prev, [friendshipId]: 0 }));
+
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ type: "chat:join", friendId: friendshipId }));
         }
@@ -95,12 +122,21 @@ export function useChat(user: any) {
         try {
             const limit = 50;
             const msgs = await api.get(`/friends/${friendshipId}/messages?limit=${limit}`);
-            setMessages((msgs || []).sort((a: any, b: any) => a.id - b.id));
+            const sorted = (msgs || []).sort((a: any, b: any) => a.id - b.id);
+            setMessages(sorted);
             setHasMoreMessages(msgs.length === limit);
+
+            // Set stable unread marker ID
+            if (count > 0 && sorted.length > 0) {
+                const markerIdx = Math.max(0, sorted.length - count);
+                setUnreadMarkerId(sorted[markerIdx].id);
+            } else {
+                setUnreadMarkerId(null);
+            }
         } finally {
             setLoadingMessages(false);
         }
-    }, [user?.id, friends]);
+    }, [user?.id, friends, unreadCounts]);
 
     const loadMoreMessages = useCallback(async () => {
         if (!currentFriendId || !hasMoreMessages || loadingMessages) return;
@@ -234,8 +270,20 @@ export function useChat(user: any) {
 
                 if (data.type === "message:new") {
                     addMsg(data.message);
-                    if (data.message.sender.id !== currentUser?.id) {
-                        const shouldNotify = !document.hasFocus() || data.message.friendId !== cid;
+
+                    const isFromMe = data.message.sender.id === currentUser?.id;
+                    const isCurrentChat = data.message.friendId === cid;
+
+                    if (!isFromMe) {
+                        // Increment unread count if not in current chat OR if window is not focused
+                        if (!isCurrentChat || !document.hasFocus()) {
+                            setUnreadCounts(prev => ({
+                                ...prev,
+                                [data.message.friendId]: (prev[data.message.friendId] || 0) + 1
+                            }));
+                        }
+
+                        const shouldNotify = !document.hasFocus() || !isCurrentChat;
                         if (shouldNotify && Notification.permission === 'granted') {
                             const senderName = data.message.sender.name || data.message.sender.email.split('@')[0];
                             const messageText = data.message.text || (data.message.attachmentType ? `Sent ${data.message.attachmentType.toLowerCase()}` : 'New message');
@@ -442,6 +490,8 @@ export function useChat(user: any) {
             attachmentName: attachment?.name,
             replyToId
         }));
+        // Reset unread marker when sending a message
+        setUnreadMarkerId(null);
     }, []);
 
     const sendReaction = useCallback((msgId: number, emoji: string) => {
@@ -480,6 +530,49 @@ export function useChat(user: any) {
         }
     }, []);
 
+    // Tab notification badge (document title update)
+    useEffect(() => {
+        const totalUnread = Object.values(unreadCounts).reduce((acc, count) => acc + count, 0);
+        const originalTitle = "Chatr";
+        if (totalUnread > 0) {
+            document.title = `(${totalUnread}) ${originalTitle}`;
+        } else {
+            document.title = originalTitle;
+        }
+    }, [unreadCounts]);
+
+    // Handle window focus to clear unread counts for current chat and set marker
+    useEffect(() => {
+        const handleFocus = () => {
+            if (currentFriendId) {
+                const count = unreadCounts[currentFriendId] || 0;
+                if (count > 0) {
+                    // Find the message ID to set as marker
+                    setMessages(msgs => {
+                        if (msgs.length > 0) {
+                            const markerIdx = Math.max(0, msgs.length - count);
+                            setUnreadMarkerId(msgs[markerIdx].id);
+                        }
+                        return msgs;
+                    });
+                    setUnreadCounts(prev => ({ ...prev, [currentFriendId]: 0 }));
+                }
+            }
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [currentFriendId, unreadCounts]);
+
+    // Auto-hide unread marker after delay
+    useEffect(() => {
+        if (unreadMarkerId && document.hasFocus()) {
+            const timeout = setTimeout(() => {
+                setUnreadMarkerId(null);
+            }, 5000); // 5 seconds
+            return () => clearTimeout(timeout);
+        }
+    }, [unreadMarkerId]);
+
     return {
         connected,
         friends,
@@ -514,6 +607,8 @@ export function useChat(user: any) {
         hasMoreFriends,
         loadingFriends,
         loadMoreFriends,
-        sendSignal
+        sendSignal,
+        unreadCounts,
+        unreadMarkerId
     };
 }
