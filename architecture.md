@@ -127,7 +127,9 @@ sequenceDiagram
     S->>A: ICE Candidate / Answer
     end
 
-    A<-->>B: Direct P2P Media Stream (SRTP)
+    Note over A,B: Direct P2P Media Stream (SRTP)
+    A-->>B: Audio/Video Data
+    B-->>A: Audio/Video Data
 ```
 
 ---
