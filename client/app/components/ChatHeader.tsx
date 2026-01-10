@@ -58,13 +58,6 @@ export function ChatHeader({
                 }`}
               title={isOnline ? "Online" : "Offline"}
             />
-            {/* Sync Status Badge */}
-            <div className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-[var(--color-base)] border border-[var(--border-subtle)] transition-opacity ${connected ? 'opacity-80' : 'opacity-40 animate-pulse'} whitespace-nowrap`}>
-              <div className={`h-1 w-1 rounded-full ${connected ? 'bg-indigo-400' : 'bg-[var(--text-muted)]'}`} />
-              <span className="text-[8px] uppercase tracking-wider font-black text-[var(--text-muted)]">
-                {connected ? "Syncing" : "Offline"}
-              </span>
-            </div>
           </div>
         </div>
         {typingText ? (
