@@ -25,6 +25,8 @@ model User {
   roomMemberships  RoomMember[]
   sentInvites      RoomInvite[] @relation("Inviter")
   receivedInvites  RoomInvite[] @relation("Invitee")
+
+  pushSubscriptions PushSubscription[]
 }
 
 model Friend {
@@ -130,3 +132,17 @@ model Reaction {
   @@unique([userId, messageId, emoji])
   @@index([messageId])
 }
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+

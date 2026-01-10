@@ -3,6 +3,7 @@ import * as api from "@/lib/api";
 import * as WS from "@/lib/ws";
 import toastLib from "@/lib/toast";
 import { useAuthStore } from "@/stores/auth";
+import * as push from "@/lib/push";
 
 interface Message {
     id: number;
@@ -201,11 +202,29 @@ export function useChat(user: any) {
             const ws = WS.create(token);
             wsRef.current = ws;
 
-            ws.onopen = () => {
+            ws.onopen = async () => {
                 setConnected(true);
-                // Use ref for latest currentFriendId
-                if (stateRefs.current.currentFriendId) {
-                    ws.send(JSON.stringify({ type: "chat:join", friendId: stateRefs.current.currentFriendId }));
+
+                // Rejoin current chat if we have one
+                if (currentFriendIdRef.current) {
+                    ws.send(JSON.stringify({ type: "chat:join", friendId: currentFriendIdRef.current }));
+                }
+
+                // ✅ Register Service Worker & Push Notifications
+                if ("serviceWorker" in navigator && Notification.permission !== "denied") {
+                    try {
+                        await push.registerServiceWorker();
+                        if (Notification.permission === "granted") {
+                            await push.subscribeUserToPush();
+                        } else if (Notification.permission === "default") {
+                            const permission = await Notification.requestPermission();
+                            if (permission === "granted") {
+                                await push.subscribeUserToPush();
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Push registration error:", err);
+                    }
                 }
             };
 

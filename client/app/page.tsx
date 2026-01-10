@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
 import GlobalHeader from "./components/GlobalHeader";
 import * as api from "@/lib/api";
@@ -23,6 +24,8 @@ import { VideoCallOverlay } from "./components/VideoCallOverlay";
 export default function ChatPage() {
   const { user, hydrated, setUser } = useAuthStore();
   const [ready, setReady] = useState(false);
+  const searchParams = useSearchParams();
+  const friendIdParam = searchParams.get("friendId");
 
   // Auth Form Logic
   const auth = useAuthForm();
@@ -111,6 +114,16 @@ export default function ChatPage() {
       webRTC.cleanup();
     }
   }, [chat.onlineUsers, chat.callStatus, chat.activeCallUserId, chat.friends, chat.connected]);
+
+  // Handle deep linking from notifications
+  useEffect(() => {
+    if (friendIdParam && chat.friends.length > 0) {
+      const fid = parseInt(friendIdParam);
+      if (fid && fid !== chat.currentFriendId) {
+        chat.selectFriend(fid);
+      }
+    }
+  }, [friendIdParam, chat.friends, chat.currentFriendId]);
 
   const handleStartCall = () => {
     if (!currentFriendUser) return;

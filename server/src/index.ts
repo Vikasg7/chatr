@@ -5,6 +5,7 @@ import authRouter from "./routes/auth";
 import friendsRouter from "./routes/friends";
 import usersRouter from "./routes/users";
 import uploadRouter from "./routes/uploads";
+import pushRouter from "./routes/push";
 import { WSService } from "./ws";
 import http from "http";
 import path from "path";
@@ -109,6 +110,7 @@ const wsService = new WSService(server, prisma);
 app.use("/api/auth", authRouter(prisma));
 app.use("/api/friends", friendsRouter(prisma, wsService));
 app.use("/api/users", usersRouter(prisma));
+app.use("/api/push", pushRouter(prisma));
 app.use("/api/upload", uploadRouter);
 
 const PORT = process.env.PORT || 4000;

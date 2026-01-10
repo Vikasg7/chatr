@@ -2,12 +2,25 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import webpush from "web-push";
 import { fetchMetadata } from './lib/metadata';
 import { deleteFile } from './lib/file';
 import logger from './lib/logger';
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
+
+// VAPID keys should be in .env
+const publicVapidKey = process.env.VAPID_PUBLIC_KEY || "";
+const privateVapidKey = process.env.VAPID_PRIVATE_KEY || "";
+
+if (publicVapidKey && privateVapidKey) {
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL || "mailto:example@yourdomain.com",
+    publicVapidKey,
+    privateVapidKey
+  );
+}
 
 export type Client = {
   id: string;
@@ -216,6 +229,26 @@ export class WSService {
           type: "message:new",
           message,
         });
+
+        // ✅ Push Notifications for offline/background users
+        const friend = await this.prisma.friend.findUnique({
+          where: { id: client.friendId },
+          select: { senderId: true, receiverId: true }
+        });
+
+        if (friend) {
+          const targetUserId = friend.senderId === client.userId ? friend.receiverId : friend.senderId;
+          const isOnline = this.userToClients.has(targetUserId);
+
+          if (!isOnline) {
+            const senderName = message.sender.name || message.sender.email.split('@')[0];
+            const body = message.text || (message.attachmentType ? `Sent ${message.attachmentType.toLowerCase()}` : 'New message');
+            this.sendPushNotification(targetUserId, senderName, body, {
+              friendId: client.friendId,
+              messageId: message.id
+            });
+          }
+        }
       } else if (msg.type === "typing:start" || msg.type === "typing:stop") {
         if (!client.friendId) return;
         this.broadcastToChat(client.friendId, {
@@ -403,6 +436,51 @@ export class WSService {
       if (client && client.socket.readyState === WebSocket.OPEN) {
         client.socket.send(data);
       }
+    }
+  }
+
+  async sendPushNotification(userId: number, title: string, body: string, data?: any) {
+    try {
+      const subscriptions = await this.prisma.pushSubscription.findMany({
+        where: { userId }
+      });
+
+      const payload = JSON.stringify({
+        title,
+        body,
+        data,
+        icon: "/icon.svg", // Fallback icon
+      });
+
+      const deletions: string[] = [];
+      await Promise.all(subscriptions.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: {
+                p256dh: sub.p256dh,
+                auth: sub.auth
+              }
+            },
+            payload
+          );
+        } catch (err: any) {
+          if (err.statusCode === 404 || err.statusCode === 410) {
+            deletions.push(sub.endpoint);
+          } else {
+            logger.error(`Push error for user ${userId}:`, err);
+          }
+        }
+      }));
+
+      if (deletions.length > 0) {
+        await this.prisma.pushSubscription.deleteMany({
+          where: { endpoint: { in: deletions } }
+        });
+      }
+    } catch (err) {
+      logger.error("Push notification logic error:", err);
     }
   }
 }
