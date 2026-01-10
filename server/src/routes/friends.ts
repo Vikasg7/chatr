@@ -111,11 +111,6 @@ export default (prisma: PrismaClient, wsService: WSService) => {
             type: "friend:updated",
             friend: updated
         });
-        // Notify receiver (current user) on other devices too if any
-        wsService.sendToUser(updated.receiverId, {
-            type: "friend:updated",
-            friend: updated
-        });
     });
 
     // GET MESSAGES (with pagination support)

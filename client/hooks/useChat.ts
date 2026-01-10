@@ -323,7 +323,7 @@ export function useChat(user: any) {
                 }
                 else if (data.type === "friend:updated") {
                     setFriends(prev => prev.map(f => f.id === data.friend.id ? data.friend : f));
-                    // Only toast if someone ELSE accepted our request
+                    // ✅ Fix: Only toast if WE are the sender and the OTHER person accepted
                     if (data.friend.status === "ACCEPTED" && data.friend.senderId === currentUser?.id) {
                         toastLib.showToast(`${data.friend.receiver?.name || 'Someone'} accepted your friend request!`, "success");
                     }
