@@ -343,8 +343,9 @@ export class WSService {
           reactions
         });
       } else if (msg.type.startsWith("call:")) {
+        const friendId = Number(msg.friendId || client.friendId || 0);
         const friend = await this.prisma.friend.findUnique({
-          where: { id: client.friendId || 0 }, // fallback or use the friendId from the message if provided
+          where: { id: friendId },
           select: { senderId: true, receiverId: true }
         });
 
@@ -359,15 +360,15 @@ export class WSService {
             return client.socket.send(JSON.stringify({
               type: "call:error",
               error: "User is offline",
-              friendId: client.friendId
+              friendId: friendId
             }));
           }
         }
 
         // Always send call signals to all connections of the target user
-        this.sendToUser(targetUserId, { ...msg, friendId: client.friendId });
+        this.sendToUser(targetUserId, { ...msg, friendId: friendId });
         // And send to other connections of the sender (to sync states)
-        this.sendToUser(client.userId, { ...msg, friendId: client.friendId }, client.id);
+        this.sendToUser(client.userId, { ...msg, friendId: friendId }, client.id);
 
         // Logging Call History
         if (msg.type === "call:cancel" || msg.type === "call:reject" || msg.type === "call:end") {

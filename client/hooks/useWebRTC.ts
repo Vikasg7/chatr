@@ -47,9 +47,11 @@ export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWeb
     }, [cleanup]);
 
     const mangleSdp = (sdp: string) => {
+        if (!sdp) return sdp;
         // Force high-quality Opus bitrate (default is ~32kbps, we want ~128kbps)
-        return sdp.replace(/a=fmtp:(\d+) (.*)/g, (match, pt, params) => {
-            if (params.includes('opus')) {
+        // More robust regex to catch opus fmtp
+        return sdp.replace(/a=fmtp:(\d+)(.*)/g, (match, pt, params) => {
+            if (sdp.includes(`a=rtpmap:${pt} opus/48000`)) {
                 return `${match};stereo=1;sprop-stereo=1;maxaveragebitrate=128000;useinbandfec=1`;
             }
             return match;
@@ -71,6 +73,7 @@ export function useWebRTC({ onSignal, onStream, onError, video = false }: UseWeb
 
         pc.onicecandidate = (event) => {
             if (event.candidate) {
+                // Ensure we send the candidate with the current signaling context
                 onSignalRef.current({ type: 'call:signal', candidate: event.candidate });
             }
         };

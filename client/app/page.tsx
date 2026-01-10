@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
 import GlobalHeader from "./components/GlobalHeader";
@@ -34,13 +34,17 @@ export default function ChatPage() {
   const chat = useChat(user);
 
   // WebRTC Logic
+  const onSignal = useCallback((data: any) => {
+    chat.sendSignal(data);
+  }, [chat]);
+
+  const onStream = useCallback((stream: MediaStream) => {
+    chat.setRemoteStream(stream);
+  }, [chat]);
+
   const webRTC = useWebRTC({
-    onSignal: (data) => {
-      chat.sendSignal(data);
-    },
-    onStream: (stream) => {
-      chat.setRemoteStream(stream);
-    },
+    onSignal,
+    onStream,
     onError: (msg) => {
       const name = currentFriendUser?.name || currentFriendUser?.email.split("@")[0] || "User";
       toastLib.showToast(`${name} is offline`, "error");

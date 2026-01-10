@@ -299,12 +299,13 @@ export function useChat(user: any) {
                 else if (data.type === "call:type") setCallType(data.callType);
                 else if (data.type === "call:request") {
                     if (currentStatus !== 'IDLE') {
-                        ws.send(JSON.stringify({ type: "call:reject", friendId: cid }));
+                        ws.send(JSON.stringify({ type: "call:reject", friendId: data.friendId }));
                         return;
                     }
                     const friend = currentFriends.find(f => f.id === data.friendId);
                     const callerId = friend ? (friend.senderId === currentUser?.id ? friend.receiverId : friend.senderId) : null;
                     setActiveCallUserId(callerId);
+                    setCurrentFriendId(data.friendId); // Link to this chat for signaling
                     setCallStatus('RINGING_IN');
                     if (signalHandlerRef.current) signalHandlerRef.current(data);
                 }
@@ -380,7 +381,9 @@ export function useChat(user: any) {
     const sendSignal = useCallback((data: any) => {
         const ws = wsRef.current;
         if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ ...data, friendId: currentFriendId }));
+            // Priority: data.friendId > currentFriendId
+            const fid = data.friendId || currentFriendId;
+            ws.send(JSON.stringify({ ...data, friendId: fid }));
         } else {
             console.warn("Could not send signal: WebSocket is not open", data.type);
             if (data.type === 'call:request') {
