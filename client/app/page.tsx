@@ -631,6 +631,7 @@ export default function ChatPage() {
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         onSelect={chat.selectUser}
+        onAddFriend={chat.sendFriendRequest}
         currentUserId={user?.id}
         existingFriendIds={chat.friends.map(f => getFriendUser(f)?.id)}
       />

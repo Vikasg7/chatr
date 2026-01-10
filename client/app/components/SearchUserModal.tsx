@@ -9,6 +9,7 @@ interface SearchUserModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSelect: (userId: number) => void;
+    onAddFriend: (userId: number) => void;
     currentUserId?: number | null;
     existingFriendIds?: number[];
 }
@@ -17,6 +18,7 @@ export function SearchUserModal({
     isOpen,
     onClose,
     onSelect,
+    onAddFriend,
     currentUserId,
     existingFriendIds = []
 }: SearchUserModalProps) {
@@ -132,13 +134,13 @@ export function SearchUserModal({
                             const isFriend = existingFriendIds.includes(user.id);
 
                             return (
-                                <button
+                                <div
                                     key={user.id}
                                     onClick={() => {
                                         onSelect(user.id);
                                         onClose();
                                     }}
-                                    className="w-full p-token-3 flex items-center gap-token-3 rounded-token-lg hover:bg-[var(--color-card)] transition-colors group text-left"
+                                    className="w-full p-token-3 flex items-center gap-token-3 rounded-token-lg hover:bg-[var(--color-card)] transition-colors group text-left cursor-pointer"
                                 >
                                     <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">
                                         {user.name?.[0] || user.email[0].toUpperCase()}
@@ -148,11 +150,22 @@ export function SearchUserModal({
                                         <div className="text-xs text-[var(--text-muted)] truncate">{user.email}</div>
                                     </div>
                                     {isFriend ? (
-                                        <Check className="w-5 h-5 text-green-500" />
+                                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/10 border border-green-500/20">
+                                            <Check className="w-4 h-4 text-green-500" />
+                                        </div>
                                     ) : (
-                                        <UserPlus className="w-5 h-5 text-[var(--text-muted)] group-hover:text-indigo-400 transition-colors" />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onAddFriend(user.id);
+                                            }}
+                                            className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all transform active:scale-90"
+                                            title="Send Friend Request"
+                                        >
+                                            <UserPlus className="w-4 h-4" />
+                                        </button>
                                     )}
-                                </button>
+                                </div>
                             );
                         })}
 
