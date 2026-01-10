@@ -28,6 +28,10 @@ Chatr is a high-performance, real-time communication platform built with modern 
 - **Database**: PostgreSQL (via Prisma).
 - **Other**: WebRTC, Web Push API, JWT.
 
+## 🏗 Architecture
+
+Detailed documentation of the system's design, data flows, and real-time communication patterns can be found in the [Architecture Guide](architecture.md).
+
 ## 🚀 Installation
 
 1. **Clone the repository**:
