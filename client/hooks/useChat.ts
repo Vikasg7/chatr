@@ -98,6 +98,10 @@ export function useChat(user: any) {
     }, []);
 
     const selectFriend = useCallback(async (friendshipId: number, friendsOverride?: any[]) => {
+        setMessages([]); // Clear stale messages from previous chat
+        setUnreadMarkerId(null);
+        setHasMoreMessages(true);
+
         const list = friendsOverride || friends;
         const friendship = list.find(f => f.id === friendshipId);
         if (friendship) {
